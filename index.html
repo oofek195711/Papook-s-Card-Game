@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102f2b">
+  <title>Papook Card Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="rotateNotice">
+    <div>סובב את הטלפון לרוחב</div>
+    <span>↻</span>
+  </div>
+
+  <div id="coinsDisplay" class="coins-display hidden">💰 <span id="coinsAmount">0</span></div>
+
+  <section id="homeScreen" class="home-screen">
+    <h1 class="home-title">🃏 Papook</h1>
+    <button type="button" id="goPlayBtn" class="home-btn">⚔️ PLAY</button>
+    <button type="button" id="goCampaignBtn" class="home-btn campaign">🗺️ CAMPAIGN</button>
+    <button type="button" id="goCollectionBtn" class="home-btn secondary">🃏 COLLECTION</button>
+    <button type="button" id="goDeckBtn" class="home-btn secondary">🎴 MY DECK</button>
+    <button type="button" id="resetProgressBtn" class="home-reset-link">🔄 איפוס התקדמות (Dev)</button>
+  </section>
+
+  <section id="campaignWorldScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="campaignWorldBackBtn" class="back-btn">→ בית</button>
+      <h2 id="campaignWorldTitle">השכונה</h2>
+    </header>
+
+    <div id="campaignWorldMap" class="campaign-map"></div>
+  </section>
+
+  <section id="campaignLocationScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="campaignLocationBackBtn" class="back-btn">→ השכונה</button>
+      <h2 id="campaignLocationTitle">הבית של תמר</h2>
+    </header>
+
+    <div id="campaignLocationMap" class="campaign-map"></div>
+  </section>
+
+  <section id="collectionScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="collectionBackBtn" class="back-btn">→ בית</button>
+      <h2>האוסף שלי</h2>
+    </header>
+
+    <div class="collection-tabs">
+      <button type="button" class="tab-btn active" data-tab="character">דמויות</button>
+      <button type="button" class="tab-btn" data-tab="item">חפצים</button>
+    </div>
+
+    <div id="collectionGrid" class="collection-grid"></div>
+  </section>
+
+  <section id="deckScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="deckBackBtn" class="back-btn">→ בית</button>
+      <h2>הדק שלי</h2>
+    </header>
+
+    <div class="coming-soon">🚧 בונה הדקים בדרך — בקרוב אפשר יהיה לבחור כאן את הקלפים שאיתם נכנסים לקרב.</div>
+  </section>
+
+  <main class="game hidden" id="battleScreen">
+    <header class="top-bar">
+      <div class="turn-pill">תור: <span id="turnText">שחקן</span></div>
+      <div id="log">המשחק מתחיל...</div>
+      <div id="phaseStatus" class="phase-status">בחר קלף</div>
+      <button type="button" id="skipTurnBtn" class="skip-turn-button hidden">⏭️ דלג תור</button>
+      <button type="button" id="speedButton" class="speed-button">1x</button>
+      <button type="button" id="muteButton" class="mute-button">🔊</button>
+      <button type="button" id="exitBattleBtn" class="exit-battle-button">🚪</button>
+    </header>
+
+    <section class="battle-area">
+      <div class="battle-row ai-row">
+        <aside class="hero-panel ai-hero">
+          <img src="../images/computer.jpg" class="hero-image" alt="AI">
+          <div class="hero-name">AI</div>
+          <div class="hero-health">
+            <span class="hero-heart-icon">❤️</span>
+            <span id="aiHp">30</span>
+          </div>
+          <div class="hero-hp-track">
+            <div id="aiHpBar" class="hero-hp-fill"></div>
+          </div>
+        </aside>
+
+        <div id="aiBoard" class="board"></div>
+      </div>
+
+      <div class="battle-row player-row">
+        <aside class="hero-panel player-hero">
+          <img src="../images/ofek.png" class="hero-image" alt="אופק">
+          <div class="hero-name">אופק</div>
+          <div class="hero-health">
+            <span class="hero-heart-icon">❤️</span>
+            <span id="playerHp">30</span>
+          </div>
+          <div class="hero-hp-track">
+            <div id="playerHpBar" class="hero-hp-fill"></div>
+          </div>
+        </aside>
+
+        <div id="playerBoard" class="board"></div>
+      </div>
+    </section>
+
+    <section class="hand-area" id="handArea">
+      <div class="hand-label">היד שלך</div>
+      <div id="playerHand" class="hand"></div>
+    </section>
+  </main>
+
+  <script src="sound.js"></script>
+
+  <!-- Every character's Fusion combos live in their own file here.
+       They just merge into window.CardCombos, which cards.js reads
+       right after. Adding a combo for an EXISTING character = edit
+       their file. Adding a brand new character with combos = add a
+       new file here (and to cards.js's own character list). -->
+  <script src="combos/or.js"></script>
+  <script src="combos/ofek.js"></script>
+  <script src="combos/dor.js"></script>
+  <script src="combos/omer.js"></script>
+  <script src="combos/tamar.js"></script>
+  <script src="combos/shahar.js"></script>
+  <script src="combos/amit.js"></script>
+  <script src="combos/rotem.js"></script>
+  <script src="combos/tamir.js"></script>
+  <script src="combos/yuval.js"></script>
+  <script src="combos/mor.js"></script>
+  <script src="combos/noa.js"></script>
+
+  <script src="cards.js"></script>
+
+  <!-- Campaign content: one file per world, same pattern as combos/.
+       progression.js is the only thing allowed to touch localStorage. -->
+  <script src="campaign/worlds/neighborhood.js"></script>
+  <script src="campaign/progression.js"></script>
+
+  <script src="effects.js"></script>
+  <script src="skills.js"></script>
+  <script src="weaknesses.js"></script>
+  <script src="ai.js"></script>
+  <script src="script.js"></script>
+  <script src="campaign.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
