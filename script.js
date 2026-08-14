@@ -305,8 +305,17 @@ function renderHand() {
   });
 }
 
+// While a card is being actively dragged, the hand needs to get OUT OF
+// THE WAY visually too — not just stop intercepting touch/mouse events
+// (drag-active, see CSS). Otherwise the expanded hand overlay (which
+// deliberately covers part of the board the rest of the time) blocks
+// the exact board slots the player is trying to aim at. Uses a SEPARATE
+// class from the turn-based .collapsed so the two don't fight each
+// other if a render() happens to fire mid-drag.
 function setHandDragging(active) {
-  document.getElementById("handArea").classList.toggle("drag-active", active);
+  const handArea = document.getElementById("handArea");
+  handArea.classList.toggle("drag-active", active);
+  handArea.classList.toggle("dragging-collapsed", active);
 }
 
 function startMobileCardDrag(event, cardElement, handIndex, card) {

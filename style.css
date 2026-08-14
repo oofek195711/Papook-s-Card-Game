@@ -38,30 +38,33 @@ body {
 .home-screen {
   width: 100vw;
   height: 100dvh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 8px;
+  padding: 10px;
   background:
     radial-gradient(circle at 50% 20%, rgba(84, 149, 111, 0.35), transparent 45%),
     linear-gradient(#163f39, #0c211d);
 }
 
 .home-title {
-  margin: 0 0 12px;
-  font-size: clamp(28px, 7vw, 46px);
+  margin: 0 0 6px;
+  font-size: clamp(18px, 5vw, 30px);
   font-weight: 900;
   color: #ffd94a;
   text-shadow: 0 0 14px rgba(255, 180, 0, .5), 3px 3px 0 #000;
+  flex: 0 0 auto;
 }
 
 .home-btn {
+  flex: 0 0 auto;
   width: min(80vw, 320px);
-  padding: 14px 18px;
+  padding: 8px 18px;
   font-family: inherit;
-  font-size: clamp(15px, 4vw, 19px);
+  font-size: clamp(13px, 3.2vw, 16px);
   font-weight: 900;
   border: none;
   border-radius: 12px;
@@ -509,12 +512,13 @@ body {
 }
 
 .home-reset-link {
-  margin-top: 10px;
+  flex: 0 0 auto;
+  margin-top: 2px;
   border: none;
   background: none;
   color: #7f9c96;
   font-family: inherit;
-  font-size: clamp(10px, 2.4vw, 12px);
+  font-size: clamp(9px, 2.2vw, 11px);
   text-decoration: underline;
   cursor: pointer;
   opacity: .8;
@@ -1015,17 +1019,22 @@ body {
    this peek height (see .battle-area's padding-bottom), so that peek
    always lands on empty background — never cutting across a board card,
    in either state. */
-.hand-area.collapsed {
+.hand-area.collapsed,
+.hand-area.dragging-collapsed {
   transform: translateY(calc(var(--hand-height) - var(--hand-collapsed-height)));
 }
 
-.hand-area.collapsed .hand-label {
+.hand-area.collapsed .hand-label,
+.hand-area.dragging-collapsed .hand-label {
   display: none;
 }
 
 /* While a card is actively being dragged, the hand overlay stops
    intercepting touch/mouse hit-testing so drops can reach board slots
-   that are visually underneath it (see script.js setHandDragging()). */
+   that are visually underneath it (see script.js setHandDragging()). It
+   ALSO shrinks down at the same time (.dragging-collapsed above) — the
+   whole point of dragging is to aim at a board slot, so the board needs
+   to actually be visible during the drag, not just droppable-through. */
 .hand-area.drag-active {
   pointer-events: none;
 }
@@ -1469,6 +1478,21 @@ body {
   .turn-pill,
   #log {
     font-size: 10px;
+  }
+
+  .home-screen {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .home-title {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+
+  .home-btn {
+    padding: 6px 16px;
+    font-size: 12px;
   }
 }
 /* NOTE: the block above used to be missing its closing brace, which meant
