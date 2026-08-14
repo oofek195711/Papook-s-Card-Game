@@ -46,7 +46,7 @@ function createEnemyDeck(cardPool) {
   return deck.sort(() => Math.random() - 0.5);
 }
 
-// Turns one owned character INSTANCE (see campaign/progression.js) into
+// Turns one owned character INSTANCE (see progression.js) into
 // an actual playable card, with that instance's level baked into atk/hp
 // right now — nothing downstream needs to look the level up again.
 function buildPlayerCharacterCard(instance) {
@@ -166,7 +166,7 @@ function placeBossCard(cardName, slotIndex, enemyLevel) {
 // A stage-wide difficulty bump for the AI (battleConfig.enemyLevel) —
 // simpler than per-card player leveling: every enemy card in this one
 // battle gets the same flat bonus, not saved anywhere. Early bosses use
-// a low enemyLevel, later ones higher — see campaign/worlds/*.js.
+// a low enemyLevel, later ones higher — see campaign-neighborhood.js.
 function applyEnemyLevelToPool(cardPool, enemyLevel) {
   if (!enemyLevel || enemyLevel <= 1) return cardPool;
 

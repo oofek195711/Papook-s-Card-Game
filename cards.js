@@ -75,17 +75,15 @@ window.CardData = (() => {
     where it's called in the turn flow.
   */
 
-  // Fusion combos now live in one file PER CHARACTER, under /combos
-  // (e.g. combos/tamar.js has every combo תמר גולן is part of). Each of
-  // those files just merges its entries into window.CardCombos. Adding a
-  // new combo for an existing character means opening ONE small file
-  // instead of scrolling through a giant shared list. Adding a combo for
-  // a brand new character means creating one new file in /combos and
-  // loading it in index.html (before cards.js).
+  // Fusion combos all live in combos.js (organized in blocks, one per
+  // character, within that single file), which merges its entries into
+  // window.CardCombos. This used to be split into one file per character
+  // under a combos/ folder — flattened to a single file because nested
+  // folders don't reliably survive a drag-and-drop GitHub upload.
   //
-  // IMPORTANT: every file in /combos/ must be loaded via <script> BEFORE
-  // this file (cards.js) in index.html, since we read window.CardCombos
-  // here at load time.
+  // IMPORTANT: combos.js must be loaded via <script> BEFORE this file
+  // (cards.js) in index.html, since we read window.CardCombos here at
+  // load time.
   const combos = window.CardCombos || {};
 
   return { cards, combos };

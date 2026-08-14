@@ -254,7 +254,7 @@ window.UI = (() => {
   }
 
   // --- Items tab: plain, no levels (items don't have levels — see
-  // campaign/progression.js). Locked items render as a mystery tile.
+  // progression.js). Locked items render as a mystery tile.
 
   function itemCardTileHtml(card) {
     if (isItemLocked(card.name)) return mysteryTileHtml();
