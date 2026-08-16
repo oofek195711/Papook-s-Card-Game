@@ -38,12 +38,12 @@ body {
 .home-screen {
   width: 100vw;
   height: 100dvh;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 18px;
   padding: 10px;
   background:
     radial-gradient(circle at 50% 20%, rgba(84, 149, 111, 0.35), transparent 45%),
@@ -1483,6 +1483,12 @@ body {
   .home-screen {
     gap: 5px;
     padding: 6px;
+    /* Only the tiniest screens risk not fitting even after the
+       compacting below — safe to allow scroll here specifically, since
+       this media query is a rare edge case, not the common path (that's
+       exactly why the default .home-screen above stays overflow:hidden,
+       to avoid a mobile browser's native scroll-into-view jump on tap). */
+    overflow-y: auto;
   }
 
   .home-title {

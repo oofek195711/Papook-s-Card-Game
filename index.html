@@ -6,6 +6,19 @@
   <meta name="theme-color" content="#102f2b">
   <title>Papook Card Game</title>
   <link rel="stylesheet" href="style.css">
+
+  <!-- PWA: lets this be "Added to Home Screen" and launched with NO
+       browser chrome at all (no address bar) — fixes both the visible
+       jump when the toolbar shows/hides AND gives an actual fullscreen
+       feel, instead of trying to fake it while still inside a browser
+       tab. Installing is a manual step the player does once (see
+       instructions from Claude in chat), not automatic on first visit. -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Papook">
 </head>
 
 <body>
