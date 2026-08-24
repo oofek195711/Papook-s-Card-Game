@@ -42,7 +42,10 @@ window.CardData = (() => {
     // New items
     { name: "צמח", type: "item", atkBonus: 0, hpBonus: 3, image: "../images/plant.png" },
     { name: "ציוד רופא", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/doctor_kit.png" },
-    { name: "חוף ים", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/beach.png" }
+    { name: "חוף ים", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/beach.png" },
+
+    { name: "ספה", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/Sappa.png" },
+    { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/Hamburger.png" }
   ];
 
   /*

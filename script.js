@@ -72,19 +72,37 @@ function buildPlayerCharacterCard(instance) {
 // TEMPORARY until there's a real Deck Builder: this uses the player's
 // entire collection as their deck. Deck Builder will replace this with a
 // manual pick of specific instances.
+// Builds the PLAYER's deck from their curated Deck Builder selection
+// (see progression.js's getDeckSelection) — NOT their whole collection
+// anymore. Each selected character instance becomes exactly one deck
+// card at its own level; each selected item type contributes 3 copies
+// (same as items always worked). If the player never opened Deck
+// Builder, getDeckSelection() auto-materializes a sensible default
+// (everything owned) the first time it's read, so this always works.
+// Builds the PLAYER's deck from their curated Deck Builder selection
+// (see progression.js's getDeckSelection) — NOT their whole collection
+// anymore. Each selected character instance becomes exactly one deck
+// card at its own level; each item contributes however many copies the
+// player actually dialed in for it (0 up to however many they own). If
+// the player never opened Deck Builder, getDeckSelection() auto-
+// materializes a sensible default (everything owned) the first time
+// it's read, so this always works even with zero manual setup.
 function createPlayerDeck() {
+  const deckSelection = window.Progression.getDeckSelection();
   const progress = window.Progression.getProgress();
 
-  const characterCards = progress.ownedInstances
+  const characterCards = deckSelection.instanceIds
+    .map(id => progress.ownedInstances.find(i => i.instanceId === id))
+    .filter(Boolean)
     .map(buildPlayerCharacterCard)
     .filter(Boolean);
 
   const itemCards = [];
-  cards
-    .filter(c => c.type === "item" && window.Progression.isItemUnlocked(c.name))
-    .forEach(item => {
-      for (let i = 0; i < 3; i++) itemCards.push(structuredClone(item));
-    });
+  Object.entries(deckSelection.itemCounts || {}).forEach(([itemName, count]) => {
+    const item = cards.find(c => c.name === itemName && c.type === "item");
+    if (!item || count <= 0) return;
+    for (let i = 0; i < count; i++) itemCards.push(structuredClone(item));
+  });
 
   return [...characterCards, ...itemCards].sort(() => Math.random() - 0.5);
 }

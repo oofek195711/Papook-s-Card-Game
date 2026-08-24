@@ -120,8 +120,101 @@ body {
 
 .sub-header h2 {
   margin: 0;
+  flex: 1;
   font-size: clamp(15px, 3.8vw, 19px);
   color: #ffd94a;
+}
+
+.deck-count-badge {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.4);
+  border: 1px solid rgba(255, 217, 74, .4);
+  color: #ffd94a;
+  font-size: clamp(9px, 2.2vw, 11px);
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.deck-tile {
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease, border-color .12s ease;
+}
+
+.deck-tile:active {
+  transform: scale(.97);
+}
+
+.deck-tile.in-deck {
+  border-color: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, .5);
+}
+
+.deck-tile.out-deck {
+  opacity: .5;
+}
+
+.deck-toggle-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.deck-tile.in-deck .deck-toggle-hint {
+  color: #40ff70;
+}
+
+.deck-tile.out-deck .deck-toggle-hint {
+  color: #999;
+}
+
+.collection-owned-badge {
+  font-size: 10px;
+  color: #ccc;
+  text-align: center;
+}
+
+.deck-item-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.deck-stepper-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #2ecc71;
+  border-radius: 8px;
+  background: rgba(46, 204, 113, .15);
+  color: #40ff70;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.deck-stepper-btn:active:not(:disabled) {
+  transform: scale(.9);
+}
+
+.deck-stepper-btn:disabled {
+  opacity: .3;
+  border-color: #555;
+  color: #888;
+  background: rgba(255,255,255,.05);
+  cursor: default;
+}
+
+.deck-stepper-count {
+  min-width: 18px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
 }
 
 .back-btn {
@@ -1186,7 +1279,10 @@ body {
   justify-content: center;
   padding: 16px;
   background: rgba(0,0,0,.78);
-  animation: gameEndBackdropFade .35s ease-out forwards;
+  /* Same fix as .choose-modal-backdrop — no fade on the backdrop's own
+     opacity, so the battle screen behind it never shows through
+     mid-transition. The modal box's own pop-in (gameEndPop, below)
+     handles the entrance motion instead. */
 }
 
 .game-end-modal {
@@ -1600,7 +1696,16 @@ body {
   justify-content: center;
   padding: 12px;
   background: rgba(0,0,0,.72);
-  animation: overlayFade .25s ease-out;
+  /* No fade-in animation on the backdrop itself — it used to animate its
+     OWN opacity in over .25s, but the modal content inside inherits that
+     same fading opacity as it renders. That created a very visible
+     moment where the backdrop was still translucent enough that
+     whatever screen was underneath (e.g. Home screen's buttons) showed
+     clearly THROUGH it, overlapping the modal's own text — looking
+     exactly like two screens flashing over each other. The backdrop now
+     appears instantly fully opaque; .choose-modal below still gets its
+     own little pop-in, which is safe since by the time IT'S visible the
+     backdrop already fully blocks whatever's behind it. */
 }
 
 .choose-modal {
@@ -1613,6 +1718,7 @@ body {
   background: linear-gradient(#123d38, #071c1a);
   box-shadow: 0 0 20px rgba(46, 204, 113, .5);
   text-align: center;
+  animation: gameEndPop .18s ease-out;
 }
 
 .choose-modal-title {

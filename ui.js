@@ -259,6 +259,7 @@ window.UI = (() => {
   function itemCardTileHtml(card) {
     if (isItemLocked(card.name)) return mysteryTileHtml();
 
+    const owned = window.Progression.getOwnedItemCount(card.name);
     const statsHtml = `<div class="collection-stats"><span>⚔️ +${card.atkBonus || 0}</span><span>❤️ +${card.hpBonus || 0}</span></div>`;
     const fusions = fusionsForItem(card.name);
 
@@ -266,6 +267,7 @@ window.UI = (() => {
       <div class="collection-card">
         <img src="${card.image}" class="collection-card-img" alt="${card.name}">
         <div class="collection-card-name">${card.name}</div>
+        <div class="collection-owned-badge">יש לך: ${owned}</div>
         ${statsHtml}
         ${fusionsHtmlFor(card.name, false, card, fusions)}
       </div>
@@ -290,11 +292,148 @@ window.UI = (() => {
   }
 
   function initTabs() {
-    document.querySelectorAll(".tab-btn").forEach(btn => {
+    document.querySelectorAll("#collectionScreen .tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll("#collectionScreen .tab-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         renderCollection(btn.dataset.tab);
+      });
+    });
+  }
+
+  // --- Deck Builder: pick exactly which owned character instances, and
+  // how many copies of each owned item, actually go into your playable
+  // deck. Character tiles just toggle in/out; item tiles have a real
+  // -/+ stepper since you can own (and include) several copies of the
+  // same item. Everything auto-saves immediately, no separate "save".
+
+  function updateDeckCountBadge() {
+    const P = window.Progression;
+    const counts = P.getDeckCount();
+    const owned = P.getTotalOwnedCount();
+    const badge = document.getElementById("deckCountBadge");
+    if (badge) {
+      badge.innerText = `${counts.total} מתוך ${owned} קלפים · ${counts.characters}/${P.MAX_DECK_CHARACTERS} דמויות`;
+    }
+  }
+
+  function deckCharacterTileHtml(instance, baseCard) {
+    const P = window.Progression;
+    const leveled = P.getStatsAtLevel(baseCard.atk, baseCard.hp, instance.level);
+    const inDeck = P.isInstanceInDeck(instance.instanceId);
+
+    return `
+      <div class="collection-card deck-tile ${inDeck ? "in-deck" : "out-deck"}"
+        data-instance-id="${instance.instanceId}">
+        <img src="${baseCard.image}" class="collection-card-img" alt="${baseCard.name}">
+        <div class="collection-card-name">${baseCard.name}</div>
+        <div class="collection-level-row"><span class="collection-level-badge">Lv.${instance.level}</span></div>
+        <div class="collection-stats"><span>⚔️ ${leveled.atk}</span><span>❤️ ${leveled.hp}</span></div>
+        <div class="deck-toggle-hint">${inDeck ? "✅ בחפיסה" : "➕ הוסף לחפיסה"}</div>
+      </div>
+    `;
+  }
+
+  // Items get a real quantity stepper (0 up to however many you own) —
+  // not just an on/off switch, since owning and using multiple copies
+  // of the same item is the whole point now.
+  function deckItemTileHtml(card) {
+    const P = window.Progression;
+    const owned = P.getOwnedItemCount(card.name);
+    const inDeck = P.getDeckItemCount(card.name);
+
+    return `
+      <div class="collection-card deck-tile ${inDeck > 0 ? "in-deck" : "out-deck"}" data-item-name="${card.name}">
+        <img src="${card.image}" class="collection-card-img" alt="${card.name}">
+        <div class="collection-card-name">${card.name}</div>
+        <div class="collection-stats"><span>⚔️ +${card.atkBonus || 0}</span><span>❤️ +${card.hpBonus || 0}</span></div>
+        <div class="collection-owned-badge">יש לך: ${owned}</div>
+        <div class="deck-item-stepper">
+          <button type="button" class="deck-stepper-btn deck-stepper-minus" ${inDeck <= 0 ? "disabled" : ""}>−</button>
+          <span class="deck-stepper-count">${inDeck}</span>
+          <button type="button" class="deck-stepper-btn deck-stepper-plus" ${inDeck >= owned ? "disabled" : ""}>+</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDeckScreen(filterType) {
+    const grid = document.getElementById("deckGrid");
+    const scrollTop = grid.scrollTop;
+    const P = window.Progression;
+
+    if (filterType === "character") {
+      const instances = [...P.getProgress().ownedInstances].sort((a, b) => {
+        if (a.cardName !== b.cardName) return a.cardName.localeCompare(b.cardName, "he");
+        return b.level - a.level;
+      });
+
+      grid.innerHTML = instances
+        .map(inst => {
+          const baseCard = cards.find(c => c.name === inst.cardName);
+          return baseCard ? deckCharacterTileHtml(inst, baseCard) : "";
+        })
+        .join("");
+
+      grid.querySelectorAll(".deck-tile[data-instance-id]").forEach(el => {
+        el.addEventListener("click", () => {
+          const instanceId = el.dataset.instanceId;
+          const currentlyIn = P.isInstanceInDeck(instanceId);
+
+          if (currentlyIn) {
+            if (P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
+              alert(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
+              return;
+            }
+          } else if (P.getDeckCount().characters >= P.MAX_DECK_CHARACTERS) {
+            alert(`אפשר לכלול עד ${P.MAX_DECK_CHARACTERS} דמויות בחפיסה. הוצא אחת כדי להוסיף אחרת.`);
+            return;
+          }
+
+          P.toggleDeckInstance(instanceId);
+          renderDeckScreen("character");
+        });
+      });
+    } else {
+      const items = cards.filter(c => c.type === "item" && P.isItemUnlocked(c.name));
+      grid.innerHTML = items.map(deckItemTileHtml).join("");
+
+      grid.querySelectorAll(".deck-stepper-minus").forEach(btn => {
+        btn.addEventListener("click", event => {
+          event.stopPropagation();
+          const itemName = btn.closest(".deck-tile").dataset.itemName;
+          const current = P.getDeckItemCount(itemName);
+          if (current <= 0) return;
+          if (P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
+            alert(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
+            return;
+          }
+          P.setDeckItemCount(itemName, current - 1);
+          renderDeckScreen("item");
+        });
+      });
+
+      grid.querySelectorAll(".deck-stepper-plus").forEach(btn => {
+        btn.addEventListener("click", event => {
+          event.stopPropagation();
+          const itemName = btn.closest(".deck-tile").dataset.itemName;
+          const current = P.getDeckItemCount(itemName);
+          P.setDeckItemCount(itemName, current + 1);
+          renderDeckScreen("item");
+        });
+      });
+    }
+
+    grid.scrollTop = scrollTop;
+    updateDeckCountBadge();
+  }
+
+  function initDeckTabs() {
+    document.querySelectorAll("#deckScreen .tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#deckScreen .tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderDeckScreen(btn.dataset.deckTab);
       });
     });
   }
@@ -412,6 +551,9 @@ window.UI = (() => {
     });
 
     document.getElementById("goDeckBtn").addEventListener("click", () => {
+      renderDeckScreen("character");
+      document.querySelectorAll("#deckScreen .tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelector('#deckScreen .tab-btn[data-deck-tab="character"]').classList.add("active");
       showScreen("deckScreen");
     });
 
@@ -430,6 +572,7 @@ window.UI = (() => {
     });
 
     initTabs();
+    initDeckTabs();
     showScreen("homeScreen");
   }
 

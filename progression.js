@@ -9,10 +9,12 @@
 // last time. See combos.js for the same fix applied there.
 //
 // CHARACTERS are owned as individual INSTANCES (each with its own level —
-// you can own two "אופק טלקר" at different levels, both playable). ITEMS
-// stay simple booleans (unlocked or not) — they don't level up on their
-// own, they just add a flat bonus to whatever character they're fused
-// onto (see script.js's fuseCards).
+// you can own two "אופק טלקר" at different levels, both playable).
+// ITEMS are owned as simple QUANTITIES (itemCounts[name] = how many you
+// have) — no per-copy level, but you CAN own several and choose how many
+// go into your deck, same spirit as characters just without the level
+// axis. Battle wins (campaign or Quick Battle) are the only way to gain
+// more of an item; nothing hands them out automatically otherwise.
 window.Progression = (() => {
   const STORAGE_KEY = "papook_progress";
 
@@ -20,15 +22,19 @@ window.Progression = (() => {
     return {
       coins: 0,
       // These 3 aren't fusion-building items (they're the "weakness"
-      // items used AGAINST the original 5 characters), so unlocking them
-      // by default doesn't spoil any campaign "I built a new card!"
-      // moment — it just means Quick Battle and Collection aren't
+      // items used AGAINST the original 5 characters), so starting with
+      // a few of them doesn't spoil any campaign "I built a new card!"
+      // moment — it just means Quick Battle and the Deck Builder aren't
       // completely empty of items on a brand new save.
-      unlockedItems: ["חתול", "קטשופ", "דגדוגים"],
+      itemCounts: { "חתול": 3, "קטשופ": 3, "דגדוגים": 3 },
       // Seeded with one level-1 copy of every base character — "the core
       // roster is always yours", just formalized as real owned instances
       // now instead of a blanket always-unlocked rule.
       ownedInstances: seedStarterInstances(),
+      // null = "not customized yet". getDeckSelection() materializes it
+      // (everything owned, by default) the first time anything actually
+      // asks for the deck — see below.
+      deck: null,
       stageProgress: {}    // stageId -> { completed: true, stars: 1-3 }
     };
   }
@@ -49,12 +55,28 @@ window.Progression = (() => {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return getDefaultState();
       const parsed = JSON.parse(raw);
+
+      // Migrate old saves: itemCounts used to be a simple unlockedItems
+      // array (unlocked or not, no quantity). Give each previously
+      // unlocked item a starting count of 3 so nothing is lost.
+      let itemCounts = parsed.itemCounts && typeof parsed.itemCounts === "object"
+        ? parsed.itemCounts
+        : null;
+
+      if (!itemCounts) {
+        itemCounts = {};
+        (Array.isArray(parsed.unlockedItems) ? parsed.unlockedItems : []).forEach(name => {
+          itemCounts[name] = 3;
+        });
+      }
+
       return {
         coins: parsed.coins || 0,
-        unlockedItems: Array.isArray(parsed.unlockedItems) ? parsed.unlockedItems : [],
+        itemCounts,
         ownedInstances: Array.isArray(parsed.ownedInstances) && parsed.ownedInstances.length
           ? parsed.ownedInstances
           : seedStarterInstances(),
+        deck: parsed.deck && Array.isArray(parsed.deck.instanceIds) ? parsed.deck : null,
         stageProgress: parsed.stageProgress || {}
       };
     } catch (err) {
@@ -85,8 +107,16 @@ window.Progression = (() => {
     return !!state.stageProgress[stageId]?.completed;
   }
 
+  function getOwnedItemCount(itemName) {
+    return state.itemCounts[itemName] || 0;
+  }
+
   function isItemUnlocked(itemName) {
-    return state.unlockedItems.includes(itemName);
+    return getOwnedItemCount(itemName) > 0;
+  }
+
+  function grantItem(itemName, amount = 1) {
+    state.itemCounts[itemName] = (state.itemCounts[itemName] || 0) + amount;
   }
 
   // --- Card instances & merge-upgrades ---
@@ -145,17 +175,119 @@ window.Progression = (() => {
     const merged = { instanceId: makeInstanceId(), cardName: a.cardName, level: a.level + 1 };
     state.ownedInstances.push(merged);
 
+    // Keep the deck selection consistent: the two consumed instances
+    // can't stay "in the deck" (they don't exist anymore). If BOTH of
+    // them were actually in the deck, swap them for the new merged
+    // instance so the deck doesn't silently shrink from under you.
+    if (state.deck) {
+      const hadBoth = state.deck.instanceIds.includes(instanceIdA)
+        && state.deck.instanceIds.includes(instanceIdB);
+
+      state.deck.instanceIds = state.deck.instanceIds.filter(
+        id => id !== instanceIdA && id !== instanceIdB
+      );
+
+      if (hadBoth) state.deck.instanceIds.push(merged.instanceId);
+    }
+
     persist();
 
     return { success: true, newInstance: merged, cost };
   }
 
   // Grants a brand new level-1 copy of a character (campaign reward type
-  // "characterCopy"). Not a merge — just adds to the pool.
+  // "characterCopy"). Not a merge — just adds to the pool. Auto-joins the
+  // deck too (if a deck already exists and there's room under the
+  // MAX_DECK_CHARACTERS cap) — remove it in Deck Builder if unwanted.
   function grantCharacterCopy(cardName) {
     const instance = { instanceId: makeInstanceId(), cardName, level: 1 };
     state.ownedInstances.push(instance);
+    if (state.deck && state.deck.instanceIds.length < MAX_DECK_CHARACTERS) {
+      state.deck.instanceIds.push(instance.instanceId);
+    }
     return instance;
+  }
+
+  // --- Deck Builder ---
+  const MIN_DECK_SIZE = 10;
+  // Deliberately less than "all 12" — forces an actual choice about
+  // which characters to bring, instead of just including everyone.
+  // That's the whole point of a deck at all: real tradeoffs.
+  const MAX_DECK_CHARACTERS = 7;
+
+  // Materializes a real, persisted deck the first time anything actually
+  // needs one — defaulting to the first MAX_DECK_CHARACTERS instances you
+  // own (not "everything", now that there's a cap), plus every owned
+  // item at its full owned count. After this runs once, it's a real
+  // saved selection the player can edit; future character grants keep
+  // adding to it by default if there's room (see grantCharacterCopy) —
+  // item grants do NOT auto-add to the deck, since item COUNTS in the
+  // deck are something the player explicitly dials in, not an on/off
+  // switch anymore.
+  function ensureDeckMaterialized() {
+    if (state.deck) return state.deck;
+
+    state.deck = {
+      instanceIds: state.ownedInstances.slice(0, MAX_DECK_CHARACTERS).map(i => i.instanceId),
+      itemCounts: { ...state.itemCounts }
+    };
+    persist();
+
+    return state.deck;
+  }
+
+  function getDeckSelection() {
+    return ensureDeckMaterialized();
+  }
+
+  function isInstanceInDeck(instanceId) {
+    return ensureDeckMaterialized().instanceIds.includes(instanceId);
+  }
+
+  function toggleDeckInstance(instanceId) {
+    const deck = ensureDeckMaterialized();
+    const idx = deck.instanceIds.indexOf(instanceId);
+
+    if (idx === -1) deck.instanceIds.push(instanceId);
+    else deck.instanceIds.splice(idx, 1);
+
+    persist();
+    return deck.instanceIds.includes(instanceId);
+  }
+
+  function getDeckItemCount(itemName) {
+    return ensureDeckMaterialized().itemCounts[itemName] || 0;
+  }
+
+  // Sets how many copies of this item go in the deck — clamped between
+  // 0 and however many you actually OWN (can't put in more than you have).
+  function setDeckItemCount(itemName, count) {
+    const deck = ensureDeckMaterialized();
+    const owned = getOwnedItemCount(itemName);
+    const clamped = Math.max(0, Math.min(count, owned));
+
+    deck.itemCounts[itemName] = clamped;
+    persist();
+
+    return clamped;
+  }
+
+  // Characters count 1-for-1; items count by however many copies were
+  // actually dialed in for the deck (see setDeckItemCount) — no more
+  // fixed "x3 per included item" like before.
+  function getDeckCount() {
+    const deck = ensureDeckMaterialized();
+    const characters = deck.instanceIds.length;
+    const itemCopies = Object.values(deck.itemCounts).reduce((sum, n) => sum + n, 0);
+    return { characters, itemCopies, total: characters + itemCopies };
+  }
+
+  // Total owned across everything (characters + item copies) — used for
+  // the Deck Builder's "X מתוך Y" (X out of Y) counter.
+  function getTotalOwnedCount() {
+    const characters = state.ownedInstances.length;
+    const itemCopies = Object.values(state.itemCounts).reduce((sum, n) => sum + n, 0);
+    return characters + itemCopies;
   }
 
   function findStage(stageId) {
@@ -226,10 +358,8 @@ window.Progression = (() => {
         state.coins += reward.amount;
         granted.coins += reward.amount;
       } else if (reward.type === "unlockItem") {
-        if (!state.unlockedItems.includes(reward.item)) {
-          state.unlockedItems.push(reward.item);
-          granted.items.push(reward.item);
-        }
+        grantItem(reward.item, reward.amount || 1);
+        granted.items.push(reward.item);
       } else if (reward.type === "characterCopy") {
         grantCharacterCopy(reward.character);
         granted.characterCopies.push(reward.character);
@@ -242,15 +372,17 @@ window.Progression = (() => {
   // --- Quick Battle rewards (difficulty-based, no campaign stage
   // involved) ---
 
-  function pickRandomLockedItem() {
+  // Items never "run out" anymore (you can always get another copy of
+  // something you already have — it's still useful, since the Deck
+  // Builder lets you include multiple), so this just picks any item
+  // uniformly — no more "all unlocked, fall back to coins" edge case.
+  function pickRandomItemName() {
     const allItemNames = (window.CardData?.cards || [])
       .filter(c => c.type === "item")
       .map(c => c.name);
 
-    const locked = allItemNames.filter(name => !state.unlockedItems.includes(name));
-    if (!locked.length) return null;
-
-    return locked[Math.floor(Math.random() * locked.length)];
+    if (!allItemNames.length) return null;
+    return allItemNames[Math.floor(Math.random() * allItemNames.length)];
   }
 
   function pickRandomCharacterName() {
@@ -271,19 +403,11 @@ window.Progression = (() => {
   function rollQuickBattleReward(config) {
     const coins = Math.floor(config.coinsMin + Math.random() * (config.coinsMax - config.coinsMin + 1));
     const rewards = [{ type: "coins", amount: coins }];
-    let bonusMissedFallbackCoins = 0;
 
     if (Math.random() < config.bonusChance) {
       if (config.bonusType === "item") {
-        const item = pickRandomLockedItem();
-        if (item) {
-          rewards.push({ type: "unlockItem", item });
-        } else {
-          // Every item already unlocked — give half the coin roll again
-          // instead of a bonus that has nothing left to give.
-          bonusMissedFallbackCoins = Math.round(coins * 0.5);
-          rewards.push({ type: "coins", amount: bonusMissedFallbackCoins });
-        }
+        const item = pickRandomItemName();
+        if (item) rewards.push({ type: "unlockItem", item });
       } else if (config.bonusType === "characterCopy") {
         const character = pickRandomCharacterName();
         if (character) rewards.push({ type: "characterCopy", character });
@@ -293,9 +417,6 @@ window.Progression = (() => {
     return grantRewards(rewards);
   }
 
-  // Called once when a stage is won. Idempotent-ish: replaying an already
-  // completed stage still grants rewards again (that's a deliberate,
-  // simple choice for now — no "first clear only" bookkeeping yet).
   // Called when a stage is won. Rewards only grant on the FIRST clear —
   // replaying an already-completed stage is still allowed (for practice)
   // but doesn't hand out coins/items/copies again, since you already
@@ -351,6 +472,7 @@ window.Progression = (() => {
     isWorldUnlocked,
     isWorldCompleted,
     isItemUnlocked,
+    getOwnedItemCount,
     getInstance,
     getInstancesByCardName,
     getUpgradeCost,
@@ -358,7 +480,16 @@ window.Progression = (() => {
     mergeUpgrade,
     grantCharacterCopy,
     rollQuickBattleReward,
+    getDeckSelection,
+    isInstanceInDeck,
+    toggleDeckInstance,
+    getDeckItemCount,
+    setDeckItemCount,
+    getDeckCount,
+    getTotalOwnedCount,
     MAX_CARD_LEVEL,
+    MIN_DECK_SIZE,
+    MAX_DECK_CHARACTERS,
     completeStage,
     resetProgress
   };

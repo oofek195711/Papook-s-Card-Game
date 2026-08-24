@@ -73,10 +73,16 @@
   <section id="deckScreen" class="sub-screen hidden">
     <header class="sub-header">
       <button type="button" id="deckBackBtn" class="back-btn">→ בית</button>
-      <h2>הדק שלי</h2>
+      <div id="deckCountBadge" class="deck-count-badge">0 קלפים</div>
+      <h2>החפיסה שלי</h2>
     </header>
 
-    <div class="coming-soon">🚧 בונה הדקים בדרך — בקרוב אפשר יהיה לבחור כאן את הקלפים שאיתם נכנסים לקרב.</div>
+    <div class="collection-tabs">
+      <button type="button" class="tab-btn active" data-deck-tab="character">דמויות</button>
+      <button type="button" class="tab-btn" data-deck-tab="item">חפצים</button>
+    </div>
+
+    <div id="deckGrid" class="collection-grid"></div>
   </section>
 
   <main class="game hidden" id="battleScreen">
