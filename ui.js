@@ -34,28 +34,6 @@ window.UI = (() => {
     }
   }
 
-  // All the Fusion recipes a character can take part in, e.g. for
-  // "אור לוין" -> [{ itemName: "כדור", comboName: "אור המאמן" }]
-  function fusionsForCharacter(characterName) {
-    return Object.entries(combos)
-      .filter(([key]) => key.startsWith(`${characterName}|`))
-      .map(([key, combo]) => ({
-        itemName: key.split("|")[1],
-        comboName: combo.name
-      }));
-  }
-
-  // Same idea in reverse, for an item card, e.g. for "כדור" ->
-  // [{ characterName: "אור לוין", comboName: "אור המאמן" }]
-  function fusionsForItem(itemName) {
-    return Object.entries(combos)
-      .filter(([key]) => key.endsWith(`|${itemName}`))
-      .map(([key, combo]) => ({
-        characterName: key.split("|")[0],
-        comboName: combo.name
-      }));
-  }
-
   function isItemLocked(itemName) {
     return !!window.Progression && !window.Progression.isItemUnlocked(itemName);
   }
@@ -71,27 +49,6 @@ window.UI = (() => {
     `;
   }
 
-  // Full equation both ways: "אופק + הגדלה → אופק הגדלה" (not just
-  // "+ item → result", which reads backwards) — and a mystery chip if
-  // the item involved is still locked, so it doesn't spoil the name.
-  function fusionsHtmlFor(characterName, isCharacterTile, card, fusions) {
-    if (!fusions.length) {
-      return `<div class="collection-fusions no-fusions">אין Fusion מוגדר עדיין</div>`;
-    }
-
-    return `<div class="collection-fusions">
-      ${fusions.map(f => {
-        const charName = isCharacterTile ? card.name : f.characterName;
-        const itemName = isCharacterTile ? f.itemName : card.name;
-
-        if (isItemLocked(itemName)) {
-          return `<div class="fusion-chip mystery">${charName} + ??? → ???</div>`;
-        }
-        return `<div class="fusion-chip">${charName} + ${itemName} → ${f.comboName}</div>`;
-      }).join("")}
-    </div>`;
-  }
-
   // --- Characters tab: one tile PER OWNED INSTANCE, not per character.
   // Two "אופק LV2" copies show as two separate, individually-tappable
   // tiles — tapping two matching ones (same name, same level) opens a
@@ -103,26 +60,37 @@ window.UI = (() => {
     const isSelected = instance.instanceId === selectedInstanceId;
     const maxed = instance.level >= P.MAX_CARD_LEVEL;
 
-    const weaknessHtml = baseCard.weaknesses?.length
-      ? `<div class="collection-weakness">חולשה: ${baseCard.weaknesses.map(w => w.item).join(", ")}</div>`
-      : "";
+    // When something's already selected, mark every OTHER tile that's
+    // actually a valid merge partner (same character, same level) —
+    // not just a text change, an actual glow + pulse so it's obvious at
+    // a glance which tiles you can tap next.
+    let isCandidate = false;
+    if (selectedInstanceId && !isSelected) {
+      const selected = P.getInstance(selectedInstanceId);
+      isCandidate = !!selected
+        && selected.cardName === instance.cardName
+        && selected.level === instance.level;
+    }
 
-    const hintHtml = maxed
-      ? `<div class="collection-level-maxed">רמה מקסימלית</div>`
-      : `<div class="collection-merge-hint">${isSelected ? "בחר עותק זהה למיזוג" : "הקש לבחירה"}</div>`;
-
-    const fusions = fusionsForCharacter(baseCard.name);
+    let hintHtml;
+    if (maxed) {
+      hintHtml = `<div class="collection-level-maxed">רמה מקסימלית</div>`;
+    } else if (isSelected) {
+      hintHtml = `<div class="collection-merge-hint">בחר עותק זהה למיזוג</div>`;
+    } else if (isCandidate) {
+      hintHtml = `<div class="collection-merge-hint candidate">👉 מזג לכאן!</div>`;
+    } else {
+      hintHtml = `<div class="collection-merge-hint">הקש לבחירה</div>`;
+    }
 
     return `
-      <div class="collection-card instance-card ${isSelected ? "selected" : ""}"
+      <div class="collection-card instance-card ${isSelected ? "selected" : ""} ${isCandidate ? "merge-candidate" : ""}"
         data-instance-id="${instance.instanceId}">
         <img src="${baseCard.image}" class="collection-card-img" alt="${baseCard.name}">
         <div class="collection-card-name">${baseCard.name}</div>
         <div class="collection-level-row"><span class="collection-level-badge">Lv.${instance.level}</span></div>
         <div class="collection-stats"><span>⚔️ ${leveled.atk}</span><span>❤️ ${leveled.hp}</span></div>
-        ${weaknessHtml}
         ${hintHtml}
-        ${fusionsHtmlFor(baseCard.name, true, baseCard, fusions)}
       </div>
     `;
   }
@@ -261,7 +229,6 @@ window.UI = (() => {
 
     const owned = window.Progression.getOwnedItemCount(card.name);
     const statsHtml = `<div class="collection-stats"><span>⚔️ +${card.atkBonus || 0}</span><span>❤️ +${card.hpBonus || 0}</span></div>`;
-    const fusions = fusionsForItem(card.name);
 
     return `
       <div class="collection-card">
@@ -269,7 +236,6 @@ window.UI = (() => {
         <div class="collection-card-name">${card.name}</div>
         <div class="collection-owned-badge">יש לך: ${owned}</div>
         ${statsHtml}
-        ${fusionsHtmlFor(card.name, false, card, fusions)}
       </div>
     `;
   }
@@ -282,12 +248,47 @@ window.UI = (() => {
       .join("");
   }
 
+  // --- Fusion tab: every combo you've ALREADY discovered (its item is
+  // unlocked) shows in full; anything else is a total mystery — no name,
+  // no image, no stats. Since every combo needs an unlocked item to ever
+  // actually make, "item unlocked" is exactly "you've seen this Fusion".
+
+  function fusionTileHtml(comboKey, combo) {
+    const [characterName, itemName] = comboKey.split("|");
+
+    if (isItemLocked(itemName)) return mysteryTileHtml();
+
+    const statsHtml = `<div class="collection-stats"><span>⚔️ ${combo.atk}</span><span>❤️ ${combo.hp}</span></div>`;
+    const skillsHtml = combo.skills?.length
+      ? `<div class="collection-fusion-skills">${combo.skills.map(s => s.icon || "✨").join(" ")}</div>`
+      : "";
+
+    return `
+      <div class="collection-card">
+        <img src="${combo.image}" class="collection-card-img" alt="${combo.name}">
+        <div class="collection-card-name">${combo.name}</div>
+        <div class="collection-fusion-recipe">${characterName} + ${itemName}</div>
+        ${statsHtml}
+        ${skillsHtml}
+      </div>
+    `;
+  }
+
+  function renderFusions() {
+    const grid = document.getElementById("collectionGrid");
+    grid.innerHTML = Object.entries(combos)
+      .map(([key, combo]) => fusionTileHtml(key, combo))
+      .join("");
+  }
+
   function renderCollection(filterType) {
     selectedInstanceId = null;
     if (filterType === "character") {
       renderCharacterInstances();
-    } else {
+    } else if (filterType === "item") {
       renderItems();
+    } else {
+      renderFusions();
     }
   }
 
@@ -527,6 +528,65 @@ window.UI = (() => {
     });
   }
 
+  // --- How to Play: one topic per card, Next/Previous + dots, instead of
+  // one long scroll — easier to actually read on a small landscape phone.
+  const HOW_TO_PLAY_SLIDES = [
+    { icon: "⚔️", title: "מטרת המשחק", body: "מורידים את החיים של היריב (❤️30) לאפס, לפני שהוא מוריד את שלכם." },
+    { icon: "🎴", title: "הזירה", body: "לכל שחקן 5 עמדות (Lanes). קלף תוקף תמיד את הקלף שממול אותו באותה עמדה. אם אין קלף מול — הפגיעה ישירה בחיים של היריב." },
+    { icon: "✋", title: "הנחת קלף", body: "גוררים קלף מהיד למשבצת ריקה. קלף שרק הונח מחכה תור אחד לפני שהוא תוקף בפעם הראשונה." },
+    { icon: "🔥", title: "Fusion", body: "גוררים חפץ על קלף דמות שכבר בזירה (או להפך) ליצירת שילוב חדש וחזק יותר. בשונה מהנחה רגילה, קלף Fusion תוקף מיד באותו תור! אי אפשר לשלב קלף שכבר עבר Fusion בעבר." },
+    { icon: "✨", title: "סקילים", body: "חלק מהקלפים (בעיקר Fusion) מקבלים יכולות אוטומטיות: נזק, ריפוי, הגנה (Shield), חיזוק לקלפים סמוכים, סינוור (Stun) והחייאה. הם מופעלים לבד — אין צורך ללחוץ על שום דבר." },
+    { icon: "⚠️", title: "חולשות (Weakness)", body: "לחלק מהדמויות יש חולשה לפריט מסוים. אם היריב מניח בדיוק את הפריט הזה מול הדמות עם החולשה — נגרם נזק/אפקט מיידי לקלף אקראי אצלו. שווה לשים לב איפה מניחים חפצים." },
+    { icon: "🗺️", title: "קמפיין", body: "מסע דרך \"השכונה\" נגד 5 בוסים, כל אחד עם חוקים מיוחדים משלו. כל שלב נותן מטבעות, ולפעמים גם פריטים או עותקי דמויות נוספים." },
+    { icon: "🃏", title: "אוסף וחפיסה", body: "כל דמות שיש לכם היא עותק עצמאי עם רמה משלו. מוזגים שני עותקים זהים באותה רמה (+ מטבעות) כדי לשדרג. ב-MY DECK בוחרים עד 7 דמויות וכמות חפצים לחפיסה שאיתה נכנסים לקרב." },
+    { icon: "🎯", title: "PLAY מהיר", body: "בוחרים רמת קושי (קל/בינוני/קשה) ומקבלים פרס בסוף — סיכוי גם לעותק דמות או פריט חדש, לא רק מטבעות." },
+    { icon: "📱", title: "טיפ", body: "המשחק מיועד למובייל במצב לרוחב (Landscape) בלבד. לחוויה הכי טובה — אפשר \"להוסיף למסך הבית\" מתפריט הדפדפן ולפתוח כמו אפליקציה, בלי שורת הכתובת.", tip: true }
+  ];
+
+  let howToIndex = 0;
+
+  function renderHowToSlide() {
+    const slide = HOW_TO_PLAY_SLIDES[howToIndex];
+    const isLast = howToIndex === HOW_TO_PLAY_SLIDES.length - 1;
+
+    document.getElementById("howToSlide").innerHTML = `
+      <div class="howto-card ${slide.tip ? "tip" : ""}">
+        <div class="howto-card-icon">${slide.icon}</div>
+        <div class="howto-card-title">${slide.title}</div>
+        <div class="howto-card-body">${slide.body}</div>
+      </div>
+    `;
+
+    document.getElementById("howToDots").innerHTML = HOW_TO_PLAY_SLIDES
+      .map((_, i) => `<span class="howto-dot ${i === howToIndex ? "active" : ""}"></span>`)
+      .join("");
+
+    document.getElementById("howToCounter").innerText = `${howToIndex + 1} / ${HOW_TO_PLAY_SLIDES.length}`;
+
+    const prevBtn = document.getElementById("howToPrevBtn");
+    prevBtn.disabled = howToIndex === 0;
+    prevBtn.classList.toggle("disabled", howToIndex === 0);
+
+    document.getElementById("howToNextBtn").innerText = isLast ? "סגור" : "הבא";
+  }
+
+  function initHowToPlay() {
+    document.getElementById("howToPrevBtn").addEventListener("click", () => {
+      if (howToIndex === 0) return;
+      howToIndex--;
+      renderHowToSlide();
+    });
+
+    document.getElementById("howToNextBtn").addEventListener("click", () => {
+      if (howToIndex === HOW_TO_PLAY_SLIDES.length - 1) {
+        showScreen("homeScreen");
+        return;
+      }
+      howToIndex++;
+      renderHowToSlide();
+    });
+  }
+
   function init() {
     document.getElementById("goPlayBtn").addEventListener("click", async () => {
       const difficulty = await showDifficultyPicker();
@@ -557,8 +617,15 @@ window.UI = (() => {
       showScreen("deckScreen");
     });
 
+    document.getElementById("goHowToPlayBtn").addEventListener("click", () => {
+      howToIndex = 0;
+      renderHowToSlide();
+      showScreen("howToPlayScreen");
+    });
+
     document.getElementById("collectionBackBtn").addEventListener("click", () => showScreen("homeScreen"));
     document.getElementById("deckBackBtn").addEventListener("click", () => showScreen("homeScreen"));
+    document.getElementById("howToPlayBackBtn").addEventListener("click", () => showScreen("homeScreen"));
 
     // Dev-only utility: wipe the local save (coins, unlocked items, card
     // instances, stage progress) and start over. Guarded by a confirm()
@@ -573,6 +640,7 @@ window.UI = (() => {
 
     initTabs();
     initDeckTabs();
+    initHowToPlay();
     showScreen("homeScreen");
   }
 

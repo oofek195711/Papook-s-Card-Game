@@ -121,8 +121,12 @@ window.Progression = (() => {
 
   // --- Card instances & merge-upgrades ---
   const MAX_CARD_LEVEL = 5;
+  // HP bonus was 5 before the Animation-Throwdown-style rebalance
+  // (base characters used to sit around 20-24 HP). Now that base HP is
+  // down around 15-18, a flat +5/level would dominate the whole curve —
+  // dropped to +3 so leveling still matters without swamping base stats.
   const LEVEL_ATK_BONUS = 2;
-  const LEVEL_HP_BONUS = 5;
+  const LEVEL_HP_BONUS = 3;
 
   function getInstance(instanceId) {
     return state.ownedInstances.find(i => i.instanceId === instanceId) || null;

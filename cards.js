@@ -1,51 +1,52 @@
 window.CardData = (() => {
   const cards = [
-    { name: "אור לוין", type: "character", hp: 22, atk: 5, image: "../images/or.png" },
-    { name: "אופק טלקר", type: "character", hp: 24, atk: 4, image: "../images/ofek.png" },
+    { name: "אור לוין", type: "character", hp: 16, atk: 8, image: "../images/or.png" },
+    { name: "אופק טלקר", type: "character", hp: 18, atk: 7, image: "../images/ofek.png" },
     {
-      name: "דור טלקר", type: "character", hp: 20, atk: 5, image: "../images/dor.png",
+      name: "דור טלקר", type: "character", hp: 15, atk: 8, image: "../images/dor.png",
       weaknesses: [{ item: "חתול", effect: "damage", value: 4 }]
     },
     {
-      name: "עומר שמואלי", type: "character", hp: 23, atk: 6, image: "../images/omer.png",
+      name: "עומר שמואלי", type: "character", hp: 16, atk: 9, image: "../images/omer.png",
       weaknesses: [{ item: "קטשופ", effect: "damage", value: 4 }]
     },
     {
-      name: "תמר גולן", type: "character", hp: 21, atk: 5, image: "../images/tamar.png",
+      name: "תמר גולן", type: "character", hp: 15, atk: 8, image: "../images/tamar.png",
       weaknesses: [{ item: "דגדוגים", effect: "damage", value: 4 }]
     },
 
     // New characters
-    { name: "שחר לוי", type: "character", hp: 22, atk: 5, image: "../images/shahar.png" },
-    { name: "עמית גרינברג", type: "character", hp: 23, atk: 5, image: "../images/amit.png" },
-    { name: "רותם שמי", type: "character", hp: 21, atk: 6, image: "../images/rotem.png" },
-    { name: "תמיר ביטון", type: "character", hp: 24, atk: 4, image: "../images/tamir.png" },
-    { name: "יובל מזור", type: "character", hp: 22, atk: 5, image: "../images/yuval.png" },
-    { name: "מור יוסף", type: "character", hp: 21, atk: 5, image: "../images/mor.png" },
-    { name: "נועה גראור", type: "character", hp: 23, atk: 5, image: "../images/noa.png" },
+    { name: "שחר לוי", type: "character", hp: 16, atk: 8, image: "../images/shahar.png" },
+    { name: "עמית גרינברג", type: "character", hp: 17, atk: 8, image: "../images/amit.png" },
+    { name: "רותם שמי", type: "character", hp: 15, atk: 9, image: "../images/rotem.png" },
+    { name: "תמיר ביטון", type: "character", hp: 18, atk: 7, image: "../images/tamir.png" },
+    { name: "יובל מזור", type: "character", hp: 16, atk: 8, image: "../images/yuval.png" },
+    { name: "מור יוסף", type: "character", hp: 15, atk: 8, image: "../images/mor.png" },
+    { name: "נועה גראור", type: "character", hp: 17, atk: 8, image: "../images/noa.png" },
 
     { name: "כדור", type: "item", atkBonus: 2, hpBonus: 0, image: "../images/ball.png" },
-    { name: "מערכת דיגיי", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/dj.png" },
-    { name: "הגדלה", type: "item", atkBonus: 0, hpBonus: 4, image: "../images/bigger.webp" },
+    { name: "מערכת דיגיי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/dj.png" },
+    { name: "הגדלה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/bigger.webp" },
     { name: "מדי אומנות לחימה", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/GI.png" },
-    { name: "ציפס אמריקאי", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/chips.jpg" },
-    { name: "רכב", type: "item", atkBonus: 1, hpBonus: 4, image: "../images/car.png" },
-    { name: "בית", type: "item", atkBonus: 0, hpBonus: 8, image: "../images/house.jpg" },
+    { name: "ציפס אמריקאי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/chips.jpg" },
+    { name: "רכב", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/car.png" },
+    { name: "בית", type: "item", atkBonus: 1, hpBonus: 5, image: "../images/house.jpg" },
     { name: "חתול", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/cat.png" },
     { name: "קטשופ", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/ketshup.png" },
     { name: "דגדוגים", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/digdugim.png" },
     { name: "מיקרופון", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/microphone.webp" },
-    { name: "רכבת", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/train.jpg" },
-    { name: "מכחול", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/mikhol.jpg" },
+    { name: "רכבת", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/train.jpg" },
+    { name: "מכחול", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/mikhol.jpg" },
     { name: "מחשב", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/computer.jpg" },
 
     // New items
-    { name: "צמח", type: "item", atkBonus: 0, hpBonus: 3, image: "../images/plant.png" },
+    { name: "צמח", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/plant.png" },
     { name: "ציוד רופא", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/doctor_kit.png" },
-    { name: "חוף ים", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/beach.png" },
+    { name: "חוף ים", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/beach.png" },
 
-    { name: "ספה", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/Sappa.png" },
-    { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/Hamburger.png" }
+    // New items
+    { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/hamburger.png" },
+    { name: "ספה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/sofa.png" }
   ];
 
   /*

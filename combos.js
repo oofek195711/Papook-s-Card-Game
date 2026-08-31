@@ -19,14 +19,23 @@
 window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
+  // NOTE: this used to be "אור המאמן" (motivate skill). Replaced with
+  // "אור החלוץ" per the new כדור soccer-position set — same key
+  // ("אור לוין|כדור") can only point to one result, so the old combo is
+  // gone now. Flagging this clearly since it's a real content change,
+  // not just an addition.
   "אור לוין|כדור": {
-    name: "אור המאמן",
-    image: "../images/or_coach.png",
-    atk: 10,
-    hp: 30,
-    skills: [
-      { type: "motivate", value: 2, trigger: "beforeAttack", icon: "📣" }
-    ]
+    name: "אור החלוץ",
+    image: "../images/or_striker.png",
+    atk: 13,
+    hp: 18
+  },
+
+  "אור לוין|המבורגר": {
+    name: "אור המלצר",
+    image: "../images/or_waiter.png",
+    atk: 11,
+    hp: 19
   }
 });
 // Fusion combos for אופק טלקר.
@@ -37,15 +46,15 @@ Object.assign(window.CardCombos, {
   "אופק טלקר|הגדלה": {
     name: "אופק הגדלה",
     image: "../images/metzah.png",
-    atk: 12,
-    hp: 35
+    atk: 10,
+    hp: 24
   },
 
   "אופק טלקר|רכבת": {
     name: "אופק הקטר",
     image: "../images/ofek_train.png",
-    atk: 10,
-    hp: 30,
+    atk: 11,
+    hp: 21,
     skills: [
       { type: "stun", trigger: "beforeAttack", icon: "🚂" }
     ]
@@ -54,8 +63,25 @@ Object.assign(window.CardCombos, {
   "אופק טלקר|מחשב": {
     name: "אופק האקדמאי",
     image: "../images/ofek_academic.png",
-    atk: 9,
-    hp: 28
+    atk: 10,
+    hp: 20
+  },
+
+  "אופק טלקר|כדור": {
+    name: "אופק הבלם",
+    image: "../images/ofek_defender.png",
+    atk: 10,
+    hp: 22,
+    skills: [
+      { type: "shield", value: 4, trigger: "beforeAttack", icon: "🛡️" }
+    ]
+  },
+
+  "אופק טלקר|המבורגר": {
+    name: "אופק המלצר",
+    image: "../images/ofek_waiter.png",
+    atk: 10,
+    hp: 20
   }
 });
 // Fusion combos for דור טלקר.
@@ -66,11 +92,18 @@ Object.assign(window.CardCombos, {
   "דור טלקר|מערכת דיגיי": {
     name: "The fancy dude",
     image: "../images/fancy_dude.jpeg",
-    atk: 9,
-    hp: 28,
+    atk: 11,
+    hp: 19,
     skills: [
       { type: "heal", value: 3, trigger: "beforeAttack", icon: "❤️" }
     ]
+  },
+
+  "דור טלקר|המבורגר": {
+    name: "דור הברמן",
+    image: "../images/dor_bartender.png",
+    atk: 10,
+    hp: 18
   }
 });
 // Fusion combos for עומר שמואלי.
@@ -81,8 +114,8 @@ Object.assign(window.CardCombos, {
   "עומר שמואלי|מדי אומנות לחימה": {
     name: "עומר מוריד לקרקע",
     image: "../images/omer_ground.png",
-    atk: 11,
-    hp: 32,
+    atk: 12,
+    hp: 20,
     skills: [
       { type: "shield", value: 4, trigger: "beforeAttack", icon: "🛡️" }
     ]
@@ -91,8 +124,25 @@ Object.assign(window.CardCombos, {
   "עומר שמואלי|מחשב": {
     name: "BiGBOY",
     image: "../images/bigboy.png",
+    atk: 12,
+    hp: 21
+  },
+
+  "עומר שמואלי|כדור": {
+    name: "עומר המגן",
+    image: "../images/omer_guard.png",
+    atk: 12,
+    hp: 19,
+    skills: [
+      { type: "motivate", value: 2, trigger: "beforeAttack", icon: "📣" }
+    ]
+  },
+
+  "עומר שמואלי|המבורגר": {
+    name: "עומר הברמן",
+    image: "../images/omer_bartender.png",
     atk: 11,
-    hp: 33
+    hp: 19
   }
 });
 // Fusion combos for תמר גולן.
@@ -103,8 +153,8 @@ Object.assign(window.CardCombos, {
   "תמר גולן|ציפס אמריקאי": {
     name: "תמר משחקת באוכל",
     image: "../images/tamar_food.png",
-    atk: 8,
-    hp: 27,
+    atk: 11,
+    hp: 18,
     skills: [
       { type: "punch", value: 3, trigger: "beforeAttack", icon: "👊" }
     ]
@@ -113,25 +163,32 @@ Object.assign(window.CardCombos, {
   "תמר גולן|מכחול": {
     name: "תמר הציירת",
     image: "../images/tamar_artist.png",
-    atk: 7,
-    hp: 25
+    atk: 10,
+    hp: 17
   },
 
   "תמר גולן|מחשב": {
     name: "תמר מעצבת אתרים",
     image: "../images/tamar_web.png",
-    atk: 8,
-    hp: 27
+    atk: 10,
+    hp: 17
   },
 
   "תמר גולן|חוף ים": {
     name: "תמר חיילת ים",
     image: "../images/tamar_navy.png",
-    atk: 10,
-    hp: 29,
+    atk: 12,
+    hp: 19,
     skills: [
       { type: "shield", value: 5, trigger: "beforeAttack", icon: "🛡️" }
     ]
+  },
+
+  "תמר גולן|המבורגר": {
+    name: "תמר המארחת",
+    image: "../images/tamar_hostess.png",
+    atk: 10,
+    hp: 17
   }
 });
 // Fusion combos for שחר לוי.
@@ -142,8 +199,28 @@ Object.assign(window.CardCombos, {
   "שחר לוי|צמח": {
     name: "שחר הצמחוני",
     image: "../images/shahar_vegan.png",
-    atk: 8,
-    hp: 25
+    atk: 9,
+    hp: 18
+  },
+
+  "שחר לוי|המבורגר": {
+    name: "שחר המבקרת",
+    image: "../images/shahar_critic.png",
+    atk: 11,
+    hp: 19,
+    skills: [
+      { type: "punch", value: 3, trigger: "beforeAttack", icon: "👊" }
+    ]
+  },
+
+  "שחר לוי|ספה": {
+    name: "שחר הפסיכולוגית",
+    image: "../images/shahar_psychologist.png",
+    atk: 9,
+    hp: 20,
+    skills: [
+      { type: "heal", value: 4, trigger: "beforeAttack", icon: "❤️" }
+    ]
   }
 });
 // Fusion combos for עמית גרינברג.
@@ -154,15 +231,15 @@ Object.assign(window.CardCombos, {
   "עמית גרינברג|צמח": {
     name: "עמית הטבעוני",
     image: "../images/amit_vegan.png",
-    atk: 8,
-    hp: 26
+    atk: 9,
+    hp: 19
   },
 
   "עמית גרינברג|חוף ים": {
     name: "עמית חייל ים",
     image: "../images/amit_navy.png",
-    atk: 10,
-    hp: 30,
+    atk: 12,
+    hp: 20,
     skills: [
       { type: "shield", value: 5, trigger: "beforeAttack", icon: "🛡️" }
     ]
@@ -183,8 +260,8 @@ Object.assign(window.CardCombos, {
   "תמיר ביטון|צמח": {
     name: "תמיר הטבעוני",
     image: "../images/tamir_vegan.png",
-    atk: 7,
-    hp: 27
+    atk: 8,
+    hp: 20
   }
 });
 // Fusion combos for יובל מזור.
@@ -196,7 +273,7 @@ Object.assign(window.CardCombos, {
     name: "יובל הרופא",
     image: "../images/yuval_doctor.png",
     atk: 9,
-    hp: 29,
+    hp: 19,
     skills: [
       { type: "heal", value: 4, trigger: "beforeAttack", icon: "❤️" }
     ]
@@ -211,7 +288,7 @@ Object.assign(window.CardCombos, {
     name: "מור האחות",
     image: "../images/mor_nurse.png",
     atk: 9,
-    hp: 28,
+    hp: 18,
     skills: [
       { type: "revive", trigger: "onFusion", icon: "✨" }
     ]
@@ -225,7 +302,7 @@ Object.assign(window.CardCombos, {
   "נועה גראור|צמח": {
     name: "נועה הצמחונית",
     image: "../images/noa_vegan.png",
-    atk: 7,
-    hp: 26
+    atk: 9,
+    hp: 19
   }
 });

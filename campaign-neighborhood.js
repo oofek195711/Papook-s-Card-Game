@@ -31,6 +31,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 16, y: 66 },
       unlockRequiresStage: null,
       bossCharacter: "תמר גולן",
+      // background: "../images/tamar_background.png"  -- add once available
 
       stages: [
         {
@@ -86,6 +87,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 34, y: 30 },
       unlockRequiresStage: null,
       bossCharacter: "אור לוין",
+      background: "../images/or_background.png",
 
       stages: [
         {
@@ -116,10 +118,10 @@ window.CampaignData.worlds.push({
         },
         {
           id: "or_boss",
-          name: "אור המאמן מול הכל",
+          name: "אור החלוץ מול הכל",
           type: "boss",
           enemyLevel: 2,
-          enemyStartingBoard: [{ cardName: "אור המאמן", slot: 2 }],
+          enemyStartingBoard: [{ cardName: "אור החלוץ", slot: 2 }],
           rewards: [
             { type: "coins", amount: 150 },
             { type: "unlockItem", item: "כדור" }
@@ -135,6 +137,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 52, y: 62 },
       unlockRequiresStage: null,
       bossCharacter: "עומר שמואלי",
+      background: "../images/omer_background.png",
 
       stages: [
         {
@@ -184,6 +187,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 70, y: 30 },
       unlockRequiresStage: null,
       bossCharacter: "דור טלקר",
+      background: "../images/dor_background.png",
 
       stages: [
         {
@@ -233,6 +237,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 88, y: 66 },
       unlockRequiresStage: null,
       bossCharacter: "אופק טלקר",
+      background: "../images/ofek_background.png",
 
       stages: [
         {

@@ -203,9 +203,27 @@ function applyEnemyLevelToPool(cardPool, enemyLevel) {
   });
 }
 
+// Applies (or clears) a location-specific background image on the
+// battle screen — e.g. the DJ club behind a fight against דור, the
+// train station behind אופק. Quick Battle and any location without one
+// yet (see campaign-neighborhood.js) just fall back to the normal CSS
+// gradient background, so nothing needs a background to keep working.
+function applyBattleBackground(backgroundUrl) {
+  const battleScreen = document.getElementById("battleScreen");
+
+  if (backgroundUrl) {
+    battleScreen.style.backgroundImage = `url("${backgroundUrl}")`;
+    battleScreen.classList.add("has-custom-bg");
+  } else {
+    battleScreen.style.backgroundImage = "";
+    battleScreen.classList.remove("has-custom-bg");
+  }
+}
+
 function startGame(battleConfig = null) {
   resetBattleState();
   currentBattleConfig = battleConfig;
+  applyBattleBackground(battleConfig?.background);
 
   const enemyPool = battleConfig?.enemyCards
     ? cards.filter(c => battleConfig.enemyCards.includes(c.name))
@@ -587,13 +605,24 @@ function highlightValidSlots(card) {
       slot.classList.add("valid-place");
     } else if (canFuse(card, target)) {
       slot.classList.add("valid-fusion");
+
+      // Extra highlight specifically for slots where this drop would
+      // create a DEFINED combo (not just a generic stat bump) — shakes
+      // to actually catch your eye mid-drag, since "some kind of fusion
+      // is possible here" and "this makes something special" are very
+      // different pieces of information to act on.
+      const character = card.type === "character" ? card : target;
+      const item = card.type === "item" ? card : target;
+      if (combos[`${character.name}|${item.name}`]) {
+        slot.classList.add("great-fusion");
+      }
     }
   });
 }
 
 function clearSlotHighlights() {
   document.querySelectorAll(".slot").forEach(slot => {
-    slot.classList.remove("valid-place", "valid-fusion", "mobile-drop-hover");
+    slot.classList.remove("valid-place", "valid-fusion", "great-fusion", "mobile-drop-hover");
   });
 }
 
@@ -647,9 +676,11 @@ function createBoardCard(card) {
     shield: 0,
     tempAttackBonus: 0,
     stunned: false,
-    // A card that was just created (fresh placement, fusion, or upgrade)
-    // can't attack until the NEXT attack phase. Consumed once in
-    // autoAttack(). (Requirement #1: no attacking the turn you're placed.)
+    // A freshly placed card (dragged from hand onto an empty slot) can't
+    // attack until the NEXT attack phase — matches Animation Throwdown.
+    // Fusion results do NOT go through this function anymore (see
+    // fuseCards), since Fusion is exempt from this wait and attacks
+    // the same turn.
     justPlaced: true
   };
 }
@@ -675,7 +706,11 @@ function fuseCards(cardA, cardB) {
       shield: 0,
       tempAttackBonus: 0,
       stunned: false,
-      justPlaced: true,
+      // Fusion results attack the SAME turn they're created (matches
+      // Animation Throwdown — a fresh, un-fused placement still waits a
+      // turn, but Fusion doesn't). See createBoardCard for the "wait a
+      // turn" default that applies to plain placements.
+      justPlaced: false,
       // Fusion results otherwise wouldn't inherit the source character's
       // weaknesses (they're a whole new object from the combo table) —
       // but a weakness like "תמר → דגדוגים" should still apply to any
@@ -696,7 +731,9 @@ function fuseCards(cardA, cardB) {
   upgraded.item = item.name;
   upgraded.isFusion = true;
   upgraded.tempAttackBonus = 0;
-  upgraded.justPlaced = true;
+  // Same reasoning as the combo branch above — this is still a Fusion,
+  // just without a named combo result, so it also attacks immediately.
+  upgraded.justPlaced = false;
 
   log(`${character.name} השתדרג עם ${item.name}.`);
   return upgraded;
@@ -763,14 +800,16 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
 
   if (checkGameOver()) return;
 
-  if (turnNumber > 1) {
-    effects.playPhase("ATTACK PHASE!");
-    await effects.wait(900);
-    await autoAttack("player");
-  } else {
-    log("הסקילים הופעלו. בתור הראשון אין התקפה רגילה.");
-    await effects.wait(650);
-  }
+  // No more "skip the whole attack phase on turn 1" special case — the
+  // justPlaced flag on every card already makes turn 1 a no-op attack
+  // phase naturally (everyone's cards are freshly placed, so they all
+  // skip themselves and clear their own flag). Special-casing turn 1 on
+  // top of that meant a card's justPlaced flag never actually got
+  // consumed during turn 1 (since autoAttack never ran), so it silently
+  // ate ANOTHER turn later before the card could attack at all.
+  effects.playPhase("ATTACK PHASE!");
+  await effects.wait(900);
+  await autoAttack("player");
 
   if (checkGameOver()) return;
 
@@ -786,6 +825,7 @@ async function runAiTurn() {
   const move = ai.chooseMove({
     hand: aiHand,
     board: aiBoard,
+    enemyBoard: playerBoard,
     canFuse
   });
 
@@ -822,11 +862,9 @@ async function runAiTurn() {
 
   if (checkGameOver()) return;
 
-  if (turnNumber > 1) {
-    effects.playPhase("AI ATTACK!");
-    await effects.wait(900);
-    await autoAttack("ai");
-  }
+  effects.playPhase("AI ATTACK!");
+  await effects.wait(900);
+  await autoAttack("ai");
 
   if (checkGameOver()) return;
 

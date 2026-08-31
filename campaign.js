@@ -153,7 +153,7 @@ window.CampaignUI = (() => {
 
     const found = getStageEntry(stageId);
     if (!found) return;
-    const { stage } = found;
+    const { location, stage } = found;
 
     window.UI.showScreen("battleScreen");
     window.startBattle({
@@ -162,7 +162,8 @@ window.CampaignUI = (() => {
       stageName: stage.name,
       enemyCards: stage.enemyCards,
       enemyStartingBoard: stage.enemyStartingBoard,
-      enemyLevel: stage.enemyLevel
+      enemyLevel: stage.enemyLevel,
+      background: location.background
     });
   }
 

@@ -35,6 +35,7 @@
     <button type="button" id="goCampaignBtn" class="home-btn campaign">🗺️ CAMPAIGN</button>
     <button type="button" id="goCollectionBtn" class="home-btn secondary">🃏 COLLECTION</button>
     <button type="button" id="goDeckBtn" class="home-btn secondary">🎴 MY DECK</button>
+    <button type="button" id="goHowToPlayBtn" class="home-btn howto">❓ HOW TO PLAY</button>
     <button type="button" id="resetProgressBtn" class="home-reset-link">🔄 איפוס התקדמות (Dev)</button>
   </section>
 
@@ -65,6 +66,7 @@
     <div class="collection-tabs">
       <button type="button" class="tab-btn active" data-tab="character">דמויות</button>
       <button type="button" class="tab-btn" data-tab="item">חפצים</button>
+      <button type="button" class="tab-btn" data-tab="fusion">Fusion</button>
     </div>
 
     <div id="collectionGrid" class="collection-grid"></div>
@@ -83,6 +85,22 @@
     </div>
 
     <div id="deckGrid" class="collection-grid"></div>
+  </section>
+
+  <section id="howToPlayScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="howToPlayBackBtn" class="back-btn">→ בית</button>
+      <h2>איך משחקים</h2>
+    </header>
+
+    <div id="howToDots" class="howto-dots"></div>
+    <div id="howToSlide" class="howto-slide-container"></div>
+
+    <div class="howto-nav">
+      <button type="button" id="howToPrevBtn" class="howto-nav-btn">הקודם</button>
+      <div id="howToCounter" class="howto-counter">1 / 10</div>
+      <button type="button" id="howToNextBtn" class="howto-nav-btn primary">הבא</button>
+    </div>
   </section>
 
   <main class="game hidden" id="battleScreen">
@@ -160,5 +178,3 @@
   <script src="ui.js"></script>
 </body>
 </html>
-
-

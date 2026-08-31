@@ -43,8 +43,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 10px;
+  gap: 13px;
+  padding: 8px;
   background:
     radial-gradient(circle at 50% 20%, rgba(84, 149, 111, 0.35), transparent 45%),
     linear-gradient(#163f39, #0c211d);
@@ -97,6 +97,18 @@ body {
 
 .home-btn.campaign:active {
   box-shadow: 0 1px 0 #2a1a8a;
+}
+
+.home-btn.howto {
+  background: linear-gradient(#4ac6ff, #0a7bb8);
+  box-shadow: 0 4px 0 #054f77;
+  color: #06232e;
+  font-size: clamp(11px, 2.8vw, 14px);
+  padding: 6px 18px;
+}
+
+.home-btn.howto:active {
+  box-shadow: 0 1px 0 #054f77;
 }
 
 .sub-screen {
@@ -174,6 +186,19 @@ body {
   font-size: 10px;
   color: #ccc;
   text-align: center;
+}
+
+.collection-fusion-recipe {
+  font-size: 10px;
+  color: #9be89b;
+  text-align: center;
+  font-weight: bold;
+}
+
+.collection-fusion-skills {
+  font-size: 14px;
+  text-align: center;
+  margin-top: 2px;
 }
 
 .deck-item-stepper {
@@ -500,6 +525,26 @@ body {
   box-shadow: 0 0 12px rgba(46, 204, 113, .6);
 }
 
+/* The clear "here's your other option" indicator for merging — a
+   distinct gold pulse (vs. the steady green of .selected), applied to
+   every OTHER owned copy that actually matches (same character, same
+   level) once one card is selected. */
+.instance-card.merge-candidate {
+  border-color: #ffd94a;
+  animation: mergeCandidatePulse 1s ease-in-out infinite;
+}
+
+@keyframes mergeCandidatePulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(255, 217, 74, .45);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(255, 217, 74, .95);
+    transform: scale(1.04);
+  }
+}
+
 .collection-merge-hint {
   font-size: 9px;
   color: #9be89b;
@@ -509,6 +554,11 @@ body {
 .instance-card.selected .collection-merge-hint {
   color: #40ff70;
   font-weight: bold;
+}
+
+.collection-merge-hint.candidate {
+  color: #ffd94a;
+  font-weight: 900;
 }
 
 .fusion-chip.mystery {
@@ -585,6 +635,124 @@ body {
   color: #ccc;
 }
 
+/* Progress dots, right under the header — shows which topic you're on
+   out of the total, at a glance, before you even read the counter. */
+.howto-dots {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0 2px;
+}
+
+.howto-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  transition: background .15s ease, transform .15s ease;
+}
+
+.howto-dot.active {
+  background: #ffd94a;
+  transform: scale(1.3);
+}
+
+.howto-slide-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+}
+
+.howto-card {
+  width: min(92vw, 480px);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 18px;
+  border: 2px solid #0a2e2a;
+  border-radius: 16px;
+  background: rgba(0,0,0,.35);
+  text-align: center;
+  animation: gameEndPop .18s ease-out;
+}
+
+.howto-card.tip {
+  border-color: rgba(255, 217, 74, .5);
+  background: rgba(255, 217, 74, .08);
+}
+
+.howto-card-icon {
+  font-size: clamp(32px, 8vw, 44px);
+  line-height: 1;
+}
+
+.howto-card-title {
+  font-weight: 900;
+  color: #ffd94a;
+  font-size: clamp(15px, 4vw, 19px);
+}
+
+.howto-card-body {
+  font-size: clamp(12px, 3vw, 14px);
+  color: #e0e0e0;
+  line-height: 1.5;
+}
+
+.howto-nav {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid #0a2e2a;
+  background: rgba(7, 31, 29, .6);
+}
+
+.howto-counter {
+  flex: 0 0 auto;
+  font-size: clamp(10px, 2.6vw, 12px);
+  color: #999;
+  font-weight: bold;
+}
+
+.howto-nav-btn {
+  flex: 0 0 auto;
+  min-width: 80px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(12px, 3vw, 14px);
+  background: rgba(255,255,255,.1);
+  color: #ccc;
+  cursor: pointer;
+}
+
+.howto-nav-btn.primary {
+  background: linear-gradient(#ffe066, #ffb700);
+  color: #151515;
+}
+
+.howto-nav-btn:active:not(.disabled) {
+  transform: scale(.95);
+}
+
+.howto-nav-btn.disabled {
+  opacity: .35;
+  cursor: default;
+}
+
 #rotateNotice {
   display: none;
 }
@@ -640,6 +808,25 @@ body {
     radial-gradient(circle at 72% 30%, rgba(84, 149, 111, 0.34), transparent 35%),
     linear-gradient(#163f39, #256348);
   overflow: hidden;
+}
+
+/* Campaign locations can set a background photo (see script.js's
+   applyBattleBackground) — e.g. the DJ club behind a fight against דור.
+   background-image is set inline per-battle; this class just handles
+   the sizing/position, and dims the board/hero panels enough that the
+   photo actually shows through instead of being fully hidden behind
+   their normal opaque panels. */
+.game.has-custom-bg {
+  background-size: cover;
+  background-position: center;
+}
+
+.game.has-custom-bg .board {
+  background: linear-gradient(rgba(102,102,102,.5), rgba(48,48,48,.5));
+}
+
+.game.has-custom-bg .hero-panel {
+  background: rgba(21, 44, 48, .55);
 }
 
 .top-bar {
@@ -903,6 +1090,27 @@ body {
   border-color: #c52cff;
   background: rgba(197,44,255,.15);
   box-shadow: inset 0 0 15px rgba(197,44,255,.65), 0 0 10px #c52cff;
+}
+
+/* Extra-specific highlight (added ON TOP of valid-fusion, see
+   highlightValidSlots): this exact drop would create a DEFINED combo,
+   not just a generic stat bump. Gold + a little shake on the card
+   itself, so it's impossible to miss mid-drag which targets are the
+   "good" ones. */
+.slot.great-fusion {
+  border-color: #ffd94a;
+  background: rgba(255, 217, 74, .18);
+  box-shadow: inset 0 0 18px rgba(255, 217, 74, .7), 0 0 14px #ffd94a;
+}
+
+.slot.great-fusion .card {
+  animation: greatFusionShake .45s ease-in-out infinite;
+}
+
+@keyframes greatFusionShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
 }
 
 .card {
