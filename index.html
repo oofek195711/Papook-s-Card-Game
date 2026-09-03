@@ -27,10 +27,10 @@
     <span>↻</span>
   </div>
 
-  <div id="coinsDisplay" class="coins-display hidden">💰 <span id="coinsAmount">0</span></div>
+  <button type="button" id="coinsDisplay" class="coins-display hidden">💰 <span id="coinsAmount">0</span> <span class="coins-shop-hint">🛒</span></button>
 
   <section id="homeScreen" class="home-screen">
-    <h1 class="home-title">🃏 Papook</h1>
+    <h1 class="home-title"><img src="icon-192.png" class="home-title-icon" alt="Papook"> Papook</h1>
     <button type="button" id="goPlayBtn" class="home-btn">⚔️ PLAY</button>
     <button type="button" id="goCampaignBtn" class="home-btn campaign">🗺️ CAMPAIGN</button>
     <button type="button" id="goCollectionBtn" class="home-btn secondary">🃏 COLLECTION</button>
@@ -72,19 +72,39 @@
     <div id="collectionGrid" class="collection-grid"></div>
   </section>
 
-  <section id="deckScreen" class="sub-screen hidden">
+  <section id="deckScreen" class="sub-screen deck-builder-screen hidden">
     <header class="sub-header">
       <button type="button" id="deckBackBtn" class="back-btn">→ בית</button>
-      <div id="deckCountBadge" class="deck-count-badge">0 קלפים</div>
       <h2>החפיסה שלי</h2>
     </header>
 
-    <div class="collection-tabs">
-      <button type="button" class="tab-btn active" data-deck-tab="character">דמויות</button>
-      <button type="button" class="tab-btn" data-deck-tab="item">חפצים</button>
+    <div class="db-stats-bar">
+      <div class="db-main-counter" id="dbMainCounter">0 / 0</div>
+      <div class="db-substats">
+        <span id="dbCharCount">0 דמויות</span>
+        <span id="dbItemCount">0 חפצים</span>
+      </div>
     </div>
 
-    <div id="deckGrid" class="collection-grid"></div>
+    <div class="db-filters">
+      <button type="button" class="db-filter-btn active" data-db-filter="all">הכל</button>
+      <button type="button" class="db-filter-btn" data-db-filter="character">דמויות</button>
+      <button type="button" class="db-filter-btn" data-db-filter="item">חפצים</button>
+    </div>
+
+    <div class="db-panels">
+      <div class="db-panel db-panel-deck">
+        <div class="db-panel-title">🔵 החפיסה שלי</div>
+        <div id="dbDeckGrid" class="db-panel-grid"></div>
+      </div>
+
+      <div class="db-panel db-panel-collection">
+        <div class="db-panel-title">🟢 האוסף שלי</div>
+        <div id="dbCollectionGrid" class="db-panel-grid"></div>
+      </div>
+    </div>
+
+    <div id="dbStatusBar" class="db-status-bar">✅ החפיסה מוכנה לקרב</div>
   </section>
 
   <section id="howToPlayScreen" class="sub-screen hidden">
@@ -103,11 +123,19 @@
     </div>
   </section>
 
+  <section id="shopScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="shopBackBtn" class="back-btn">→ בית</button>
+      <h2>חנות</h2>
+    </header>
+
+    <div id="shopGrid" class="collection-grid"></div>
+  </section>
+
   <main class="game hidden" id="battleScreen">
     <header class="top-bar">
       <div class="turn-pill">תור: <span id="turnText">שחקן</span></div>
       <div id="log">המשחק מתחיל...</div>
-      <div id="phaseStatus" class="phase-status">בחר קלף</div>
       <button type="button" id="skipTurnBtn" class="skip-turn-button hidden">⏭️ דלג תור</button>
       <button type="button" id="speedButton" class="speed-button">1x</button>
       <button type="button" id="muteButton" class="mute-button">🔊</button>

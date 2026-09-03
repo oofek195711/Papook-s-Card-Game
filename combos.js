@@ -26,14 +26,14 @@ Object.assign(window.CardCombos, {
   // not just an addition.
   "אור לוין|כדור": {
     name: "אור החלוץ",
-    image: "../images/or_striker.png",
+    image: "../images/Or_Ball.png",
     atk: 13,
     hp: 18
   },
 
   "אור לוין|המבורגר": {
     name: "אור המלצר",
-    image: "../images/or_waiter.png",
+    image: "../images/Or_Hamburger.png",
     atk: 11,
     hp: 19
   }
@@ -69,7 +69,7 @@ Object.assign(window.CardCombos, {
 
   "אופק טלקר|כדור": {
     name: "אופק הבלם",
-    image: "../images/ofek_defender.png",
+    image: "../images/Ofek_Ball.png",
     atk: 10,
     hp: 22,
     skills: [
@@ -79,7 +79,7 @@ Object.assign(window.CardCombos, {
 
   "אופק טלקר|המבורגר": {
     name: "אופק המלצר",
-    image: "../images/ofek_waiter.png",
+    image: "../images/Ofek_Hamburger.png",
     atk: 10,
     hp: 20
   }
@@ -101,7 +101,7 @@ Object.assign(window.CardCombos, {
 
   "דור טלקר|המבורגר": {
     name: "דור הברמן",
-    image: "../images/dor_bartender.png",
+    image: "../images/Dor_Hamburger.png",
     atk: 10,
     hp: 18
   }
@@ -130,7 +130,7 @@ Object.assign(window.CardCombos, {
 
   "עומר שמואלי|כדור": {
     name: "עומר המגן",
-    image: "../images/omer_guard.png",
+    image: "../images/Omer_Ball.png",
     atk: 12,
     hp: 19,
     skills: [
@@ -140,7 +140,7 @@ Object.assign(window.CardCombos, {
 
   "עומר שמואלי|המבורגר": {
     name: "עומר הברמן",
-    image: "../images/omer_bartender.png",
+    image: "../images/Omer_Hamburger.png",
     atk: 11,
     hp: 19
   }
@@ -162,14 +162,14 @@ Object.assign(window.CardCombos, {
 
   "תמר גולן|מכחול": {
     name: "תמר הציירת",
-    image: "../images/tamar_artist.png",
+    image: "../images/Tamar_Mikhol.png",
     atk: 10,
     hp: 17
   },
 
   "תמר גולן|מחשב": {
     name: "תמר מעצבת אתרים",
-    image: "../images/tamar_web.png",
+    image: "../images/Tamar_PC.png",
     atk: 10,
     hp: 17
   },
@@ -186,7 +186,7 @@ Object.assign(window.CardCombos, {
 
   "תמר גולן|המבורגר": {
     name: "תמר המארחת",
-    image: "../images/tamar_hostess.png",
+    image: "../images/Tamar_Hamburger.png",
     atk: 10,
     hp: 17
   }

@@ -64,6 +64,7 @@ window.CampaignUI = (() => {
     if (!world) return;
 
     document.getElementById("campaignWorldTitle").innerText = world.name;
+    applyScreenBackground("campaignWorldScreen", world.background);
 
     const P = window.Progression;
     const points = world.locations
@@ -103,6 +104,27 @@ window.CampaignUI = (() => {
     });
   }
 
+  // Applies (or clears) a location's background image on the location
+  // map screen itself — not just the battle. Same image used for both,
+  // so the theme carries through from "choosing which stage to fight"
+  // all the way into the fight itself, instead of only showing up once
+  // you're already in battle.
+  // Applies (or clears) a background image on a screen element — used
+  // for both the world map (the whole "השכונה" overview) and each
+  // individual location map, so the same helper covers "the whole
+  // neighborhood" and "just this one location" alike.
+  function applyScreenBackground(elementId, backgroundUrl) {
+    const screen = document.getElementById(elementId);
+
+    if (backgroundUrl) {
+      screen.style.backgroundImage = `url("${backgroundUrl}")`;
+      screen.classList.add("has-custom-bg");
+    } else {
+      screen.style.backgroundImage = "";
+      screen.classList.remove("has-custom-bg");
+    }
+  }
+
   function renderLocationMap(locationId) {
     currentLocationId = locationId;
     const found = getLocationEntry(locationId);
@@ -110,6 +132,7 @@ window.CampaignUI = (() => {
     const { location } = found;
 
     document.getElementById("campaignLocationTitle").innerText = location.name;
+    applyScreenBackground("campaignLocationScreen", location.background);
 
     const P = window.Progression;
     const n = location.stages.length;

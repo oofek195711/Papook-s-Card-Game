@@ -13,6 +13,7 @@ window.CampaignData.worlds.push({
   name: "השכונה",
   icon: "../images/campaign/world_neighborhood.png",
   unlockRequiresWorldCompleted: null, // first world — always open
+  background: "neighborhood-background.jpg",
 
   completionBonus: {
     id: "neighborhood_bonus",
@@ -41,7 +42,8 @@ window.CampaignData.worlds.push({
           enemyLevel: 1,
           enemyCards: ["תמר גולן", "ציפס אמריקאי", "מכחול"],
           rewards: [{ type: "coins", amount: 50 },
-            { type: "characterCopy", character: "תמר גולן" }
+            { type: "characterCopy", character: "תמר גולן" },
+            { type: "unlockItem", item: "המבורגר" }
           ]
         },
         {

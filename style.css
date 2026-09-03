@@ -43,21 +43,59 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 13px;
+  gap: 10px;
   padding: 8px;
   background:
-    radial-gradient(circle at 50% 20%, rgba(84, 149, 111, 0.35), transparent 45%),
-    linear-gradient(#163f39, #0c211d);
+    radial-gradient(circle at 50% 15%, rgba(255, 217, 102, 0.12), transparent 40%),
+    linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
+    url("home-background.jpg");
+  background-size: cover;
+  background-position: center;
 }
 
 .home-title {
-  margin: 0 0 6px;
-  font-size: clamp(18px, 5vw, 30px);
+  position: relative;
+  margin: 0 0 10px;
+  padding: 8px 32px;
+  font-size: clamp(17px, 4.6vw, 27px);
   font-weight: 900;
-  color: #ffd94a;
-  text-shadow: 0 0 14px rgba(255, 180, 0, .5), 3px 3px 0 #000;
+  letter-spacing: .5px;
+  color: #fff3d0;
+  background: linear-gradient(180deg, #2a2008, #14100290);
+  border: 2px solid #d4af37;
+  border-radius: 999px;
+  text-shadow: 0 0 10px rgba(255, 217, 102, .65), 2px 2px 0 #000;
+  box-shadow:
+    0 0 22px rgba(255, 200, 60, .3),
+    inset 0 1px 0 rgba(255,255,255,.15),
+    0 3px 0 #05070d;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.home-title-icon {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 0 6px rgba(255, 217, 102, .6);
+}
+
+.home-title::before,
+.home-title::after {
+  content: "◆";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .55em;
+  color: #ffe066;
+  text-shadow: 0 0 6px rgba(255, 217, 102, .9);
+}
+
+.home-title::before { left: 12px; }
+.home-title::after { right: 12px; }
 
 .home-btn {
   flex: 0 0 auto;
@@ -66,49 +104,50 @@ body {
   font-family: inherit;
   font-size: clamp(13px, 3.2vw, 16px);
   font-weight: 900;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(#ffe066, #ffb700);
-  color: #151515;
-  box-shadow: 0 4px 0 #a86a00;
+  letter-spacing: .3px;
+  border: 2px solid #d4af37;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1c2b4a, #0a1120);
+  color: #ffe066;
+  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
+  box-shadow:
+    0 3px 0 #05070d,
+    inset 0 1px 0 rgba(255,255,255,.1),
+    0 0 10px rgba(212, 175, 55, .25);
   cursor: pointer;
+}
+
+/* PLAY is the primary action — a brighter, more energetic glow than the
+   rest, same idea as the highlighted "שחק" pill in the reference image. */
+#goPlayBtn {
+  background: linear-gradient(180deg, #2f4d8a, #142549);
+  border-color: #7fc7ff;
+  box-shadow:
+    0 3px 0 #05070d,
+    inset 0 1px 0 rgba(255,255,255,.18),
+    0 0 20px rgba(127, 199, 255, .45);
 }
 
 .home-btn:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 #a86a00;
+  box-shadow: 0 1px 0 #05070d, inset 0 1px 0 rgba(255,255,255,.1);
 }
 
+/* Subtle border-tint per category, echoing the different accent-colored
+   card frames in the reference image without breaking from one unified
+   "premium" dark/gold theme. */
 .home-btn.secondary {
-  background: linear-gradient(#2ecc71, #1c9e46);
-  box-shadow: 0 4px 0 #0e5c28;
-  color: #06210f;
-}
-
-.home-btn.secondary:active {
-  box-shadow: 0 1px 0 #0e5c28;
+  border-color: #7fe0a0;
 }
 
 .home-btn.campaign {
-  background: linear-gradient(#7b5cff, #4a2fd6);
-  box-shadow: 0 4px 0 #2a1a8a;
-  color: #fff;
-}
-
-.home-btn.campaign:active {
-  box-shadow: 0 1px 0 #2a1a8a;
+  border-color: #b98cff;
 }
 
 .home-btn.howto {
-  background: linear-gradient(#4ac6ff, #0a7bb8);
-  box-shadow: 0 4px 0 #054f77;
-  color: #06232e;
+  border-color: #7fc7ff;
   font-size: clamp(11px, 2.8vw, 14px);
-  padding: 6px 18px;
-}
-
-.home-btn.howto:active {
-  box-shadow: 0 1px 0 #054f77;
+  padding: 8px 18px;
 }
 
 .sub-screen {
@@ -137,51 +176,6 @@ body {
   color: #ffd94a;
 }
 
-.deck-count-badge {
-  flex: 0 0 auto;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.4);
-  border: 1px solid rgba(255, 217, 74, .4);
-  color: #ffd94a;
-  font-size: clamp(9px, 2.2vw, 11px);
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-.deck-tile {
-  cursor: pointer;
-  transition: transform .12s ease, opacity .12s ease, border-color .12s ease;
-}
-
-.deck-tile:active {
-  transform: scale(.97);
-}
-
-.deck-tile.in-deck {
-  border-color: #2ecc71;
-  box-shadow: 0 0 10px rgba(46, 204, 113, .5);
-}
-
-.deck-tile.out-deck {
-  opacity: .5;
-}
-
-.deck-toggle-hint {
-  margin-top: 4px;
-  font-size: 10px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.deck-tile.in-deck .deck-toggle-hint {
-  color: #40ff70;
-}
-
-.deck-tile.out-deck .deck-toggle-hint {
-  color: #999;
-}
-
 .collection-owned-badge {
   font-size: 10px;
   color: #ccc;
@@ -201,45 +195,29 @@ body {
   margin-top: 2px;
 }
 
-.deck-item-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+.shop-buy-btn {
+  width: 100%;
   margin-top: 4px;
-}
-
-.deck-stepper-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid #2ecc71;
-  border-radius: 8px;
-  background: rgba(46, 204, 113, .15);
-  color: #40ff70;
-  font-size: 16px;
+  padding: 5px 4px;
+  border: 1px solid #c65a00;
+  border-radius: 6px;
+  background: linear-gradient(#ff9f4a, #c65a00);
+  color: #2e1200;
+  font-family: inherit;
   font-weight: 900;
-  line-height: 1;
+  font-size: clamp(9px, 2.2vw, 11px);
   cursor: pointer;
 }
 
-.deck-stepper-btn:active:not(:disabled) {
-  transform: scale(.9);
+.shop-buy-btn:active:not(.disabled) {
+  transform: scale(.96);
 }
 
-.deck-stepper-btn:disabled {
-  opacity: .3;
-  border-color: #555;
+.shop-buy-btn.disabled {
+  background: rgba(255,255,255,.08);
+  border-color: #444;
   color: #888;
-  background: rgba(255,255,255,.05);
   cursor: default;
-}
-
-.deck-stepper-count {
-  min-width: 18px;
-  text-align: center;
-  font-weight: 900;
-  font-size: 14px;
-  color: #fff;
 }
 
 .back-btn {
@@ -286,6 +264,19 @@ body {
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 217, 74, 0.10), transparent 40%),
     linear-gradient(#1d4a42, #0c211d);
+}
+
+/* A location's own background photo (see campaign.js's
+   applyLocationScreenBackground) carries through from picking a stage
+   all the way into the actual fight — same image, same treatment as
+   .game.has-custom-bg for the battle screen itself. */
+.sub-screen.has-custom-bg {
+  background-size: cover;
+  background-position: center;
+}
+
+.sub-screen.has-custom-bg .campaign-map {
+  background: linear-gradient(rgba(29, 74, 66, .55), rgba(12, 33, 29, .6));
 }
 
 .campaign-path {
@@ -762,14 +753,34 @@ body {
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
   z-index: 500;
-  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
   border-radius: 999px;
-  border: 1px solid #7a5a00;
-  background: rgba(0,0,0,.7);
-  color: #ffd94a;
+  border: 2px solid #d4af37;
+  background: linear-gradient(180deg, #2a2008, #14100290);
+  color: #ffe066;
+  font-family: inherit;
   font-weight: 900;
   font-size: clamp(12px, 3vw, 15px);
-  box-shadow: 0 2px 0 rgba(0,0,0,.5);
+  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
+  box-shadow: 0 2px 0 #05070d, inset 0 1px 0 rgba(255,255,255,.12), 0 0 10px rgba(212,175,55,.3);
+  cursor: pointer;
+}
+
+.coins-display:active {
+  transform: scale(.95);
+}
+
+.coins-shop-hint {
+  font-size: .85em;
+  animation: coinsShopHintPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes coinsShopHintPulse {
+  0%, 100% { transform: scale(1); opacity: .85; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 
 .home-reset-link {
@@ -832,7 +843,7 @@ body {
 .top-bar {
   direction: ltr;
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   gap: 6px;
   align-items: center;
   padding: max(4px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) 4px max(7px, env(safe-area-inset-left));
@@ -1452,30 +1463,69 @@ body {
   z-index: 55000;
   display: grid;
   place-items: center;
+  overflow: hidden;
   pointer-events: none;
 }
 
+/* FUSION: a magic-feeling radial burst expanding from the center,
+   behind text that pops in with a little overshoot/rotation — distinct
+   from the attack phase's fast, aggressive sweep below. */
 .fusion-overlay {
-  background: rgba(72,0,100,.43);
+  background: rgba(72,0,100,.28);
   animation: overlayFade calc(1s / var(--fx-speed)) forwards;
 }
 
-.phase-overlay {
-  background: rgba(115,0,0,.34);
-  animation: overlayFade calc(.9s / var(--fx-speed)) forwards;
+.fusion-overlay::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,0,255,.9), rgba(112,0,255,.4) 55%, transparent 75%);
+  animation: fusionBurst calc(.7s / var(--fx-speed)) ease-out forwards;
 }
 
-.fusion-text,
-.phase-text {
+@keyframes fusionBurst {
+  from { width: 10px; height: 10px; opacity: 1; }
+  to { width: 150vmax; height: 150vmax; opacity: 0; }
+}
+
+/* ATTACK PHASE: just the text "slamming" down from oversized to normal
+   size (impact feel) over a plain dark tint — the diagonal sweeping bar
+   was removed per feedback (felt distracting/unnecessary). */
+.phase-overlay {
+  background: rgba(115,0,0,.3);
+  animation: overlayFade calc(.6s / var(--fx-speed)) forwards;
+}
+
+.fusion-text {
   color: white;
   font-size: clamp(42px, 11vw, 85px);
   font-weight: 900;
   text-shadow: 0 0 10px #ff00ff, 0 0 22px #7000ff, 4px 4px 0 #000;
-  animation: textPop calc(.9s / var(--fx-speed)) forwards;
+  animation: fusionTextPop calc(.7s / var(--fx-speed)) forwards;
+}
+
+@keyframes fusionTextPop {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.25) rotate(4deg); opacity: 1; }
+  80% { transform: scale(.95) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 .phase-text {
+  color: white;
+  font-size: clamp(30px, 8vw, 58px);
+  font-weight: 900;
+  letter-spacing: 2px;
   text-shadow: 0 0 10px #ff0000, 0 0 22px #ff7000, 4px 4px 0 #000;
+  animation: phaseTextSlam calc(.4s / var(--fx-speed)) ease-out forwards;
+}
+
+@keyframes phaseTextSlam {
+  0% { transform: scale(2.4); opacity: 0; letter-spacing: 16px; }
+  60% { transform: scale(.9); opacity: 1; letter-spacing: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .game-end-backdrop {
@@ -1555,22 +1605,39 @@ body {
   color: #9be89b;
 }
 
+.game-end-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 .game-end-button {
-  padding: 10px 26px;
+  flex: 1;
+  padding: 10px 18px;
   border: none;
   border-radius: 10px;
   font-family: inherit;
   font-weight: 900;
-  font-size: clamp(13px, 3.4vw, 16px);
+  font-size: clamp(12px, 3.2vw, 16px);
   color: #111;
   background: linear-gradient(#ffe066, #ffb700);
   cursor: pointer;
   box-shadow: 0 3px 0 #a86a00;
+  white-space: nowrap;
+}
+
+.game-end-button.secondary {
+  color: #ddd;
+  background: rgba(255,255,255,.1);
+  box-shadow: 0 3px 0 rgba(0,0,0,.4);
 }
 
 .game-end-button:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 #a86a00;
+}
+
+.game-end-button.secondary:active {
+  box-shadow: 0 1px 0 rgba(0,0,0,.4);
 }
 
 @keyframes gameEndPop {
@@ -1587,12 +1654,6 @@ body {
   0% { opacity: 0; }
   20%, 75% { opacity: 1; }
   100% { opacity: 0; }
-}
-
-@keyframes textPop {
-  0% { transform: scale(.2) rotate(-7deg); opacity: 0; }
-  35% { transform: scale(1.18) rotate(2deg); opacity: 1; }
-  100% { transform: scale(1.55) rotate(5deg); opacity: 0; }
 }
 
 .card.attack-forward-player {
@@ -1810,22 +1871,6 @@ body {
    heal-number, hand.locked...) was accidentally being parsed as if it only
    applied inside the tiny "@media max-height:360px" block above, instead
    of applying everywhere. Fixed by closing the media query here. */
-
-.phase-status {
-  direction: rtl;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  border: 2px solid #061614;
-  border-radius: 9px;
-  background: linear-gradient(#69d9ff, #1673ba);
-  color: white;
-  font-size: clamp(11px, 1.8vw, 15px);
-  font-weight: bold;
-  box-shadow: 0 3px 0 rgba(0,0,0,.5);
-  white-space: nowrap;
-}
 
 .shield-badge {
   position: absolute;
@@ -2155,4 +2200,329 @@ body {
 .choose-card-stats {
   font-size: clamp(8px, 1.8vw, 10px);
   color: #ccc;
+}
+
+/* ============================================================
+   DECK BUILDER (two-panel: my deck / my collection)
+   Pure UI on top of the existing Progression/deck data model —
+   no game logic lives here, just presentation + interaction.
+   ============================================================ */
+
+.deck-builder-screen {
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
+    url("home-background.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+.db-stats-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #0a2e2a;
+  background: rgba(0,0,0,.25);
+}
+
+.db-main-counter {
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 900;
+  color: #ffd94a;
+  text-shadow: 0 0 8px rgba(255, 217, 102, .5);
+}
+
+.db-substats {
+  display: flex;
+  gap: 10px;
+  font-size: clamp(10px, 2.4vw, 12px);
+  color: #bcd;
+  font-weight: bold;
+}
+
+.db-panels {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+}
+
+.db-panel {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Left panel — the deck itself: dark blue with a gold frame, matching
+   the app's "premium" gold accent language used on Home. */
+.db-panel-deck {
+  border: 2px solid #d4af37;
+  background: linear-gradient(180deg, rgba(22, 35, 63, .82), rgba(10, 17, 32, .88));
+  box-shadow: inset 0 0 20px rgba(212, 175, 55, .12);
+}
+
+/* Right panel — the wider collection: dark green, matching the game's
+   established teal/green identity everywhere else. */
+.db-panel-collection {
+  border: 2px solid #2ecc71;
+  background: linear-gradient(180deg, rgba(18, 61, 56, .82), rgba(7, 28, 26, .88));
+  box-shadow: inset 0 0 20px rgba(46, 204, 113, .1);
+}
+
+.db-panel-title {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(11px, 2.8vw, 13px);
+  color: #fff3d0;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.db-panel-deck .db-panel-title {
+  background: rgba(212, 175, 55, .18);
+  border-bottom: 1px solid rgba(212, 175, 55, .4);
+}
+
+.db-panel-collection .db-panel-title {
+  background: rgba(46, 204, 113, .18);
+  border-bottom: 1px solid rgba(46, 204, 113, .4);
+}
+
+.db-filters {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 12px 8px;
+}
+
+.db-filter-btn {
+  flex: 0 1 110px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 217, 102, .4);
+  border-radius: 999px;
+  background: rgba(0,0,0,.35);
+  color: #ffe066;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: clamp(10px, 2.4vw, 12px);
+  cursor: pointer;
+}
+
+.db-filter-btn.active {
+  background: #ffd94a;
+  color: #151515;
+  border-color: #ffd94a;
+}
+
+.db-panel-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  padding: 6px;
+  align-content: start;
+}
+
+.db-empty-hint {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 16px 8px;
+  font-size: clamp(10px, 2.6vw, 12px);
+  color: #99a;
+}
+
+/* Individual card tile — noticeably smaller than the Collection
+   screen's own cards, so many fit at once in a landscape two-panel
+   layout. Every tile (character or item) is fully tappable, no
+   secondary "add" button inside it. */
+.db-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 3px 5px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  background: rgba(0,0,0,.35);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  animation: dbTileEnter .18s ease-out;
+  transition: transform .1s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.db-tile:active {
+  transform: scale(.94);
+}
+
+@keyframes dbTileEnter {
+  from { opacity: 0; transform: scale(.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.db-tile-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 5px;
+  box-shadow: 0 0 4px rgba(255, 217, 102, .25);
+}
+
+.db-tile-name {
+  font-size: clamp(8px, 2vw, 9.5px);
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.db-tile-level {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.75);
+  color: #ffd94a;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.db-tile-stats {
+  display: flex;
+  gap: 4px;
+  font-size: 7.5px;
+  color: #ccc;
+}
+
+/* Currently-selected character for the Fusion glow preview (see
+   dbSelectedCharacterName in ui.js) — a warm highlight distinct from
+   the purple Fusion glow on ITEMS below. */
+.db-tile-character.db-selected {
+  border-color: #ffd94a;
+  box-shadow: 0 0 10px rgba(255, 217, 102, .7);
+}
+
+/* Another owned instance that matches the selected one (same name,
+   same level) — a valid merge partner. Tapping it (not dragging)
+   triggers the same merge-confirm flow used in Collection. */
+.db-tile-character.db-merge-candidate {
+  border-color: #2ecc71;
+  animation: dbMergeCandidatePulse 1s ease-in-out infinite;
+}
+
+@keyframes dbMergeCandidatePulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(46, 204, 113, .5); transform: scale(1); }
+  50% { box-shadow: 0 0 14px rgba(46, 204, 113, .9); transform: scale(1.05); }
+}
+
+.db-merge-hint {
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #2ecc71;
+  color: #06210f;
+  font-size: 6.5px;
+  font-weight: 900;
+}
+
+/* An item that has a DEFINED combo with whichever character is
+   currently selected — purple, matching the existing "great-fusion"
+   purple used during in-battle drag highlighting, for visual
+   consistency across the app. */
+.db-tile-item.db-fusion-glow {
+  border-color: #c52cff;
+  box-shadow: 0 0 10px rgba(197, 44, 255, .7);
+  animation: dbTileEnter .18s ease-out, dbFusionPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes dbFusionPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(197, 44, 255, .55); }
+  50% { box-shadow: 0 0 16px rgba(197, 44, 255, .95); }
+}
+
+.db-fusion-ready {
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #c52cff;
+  color: #fff;
+  font-size: 6.5px;
+  font-weight: 900;
+  box-shadow: 0 0 6px rgba(197, 44, 255, .8);
+}
+
+/* Drag-and-drop (see dbStartDrag/dbMoveDrag/dbEndDrag in ui.js) — the
+   real card tile becomes a static "source" placeholder while a floating
+   ghost clone follows the finger; dropping on the OTHER panel actually
+   moves the card, dropping anywhere else cancels with no change. A
+   plain tap (no real movement) falls through to selection/merge
+   instead — see dbHandleTap. */
+.db-tile.db-dragging-source {
+  opacity: .35;
+}
+
+.db-drag-ghost {
+  position: fixed;
+  z-index: 90000;
+  pointer-events: none;
+  transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(0,0,0,.6);
+}
+
+.db-panel.db-drop-hover {
+  box-shadow: 0 0 0 3px #ffd94a, inset 0 0 24px rgba(255, 217, 74, .3);
+}
+
+/* A brief extra pop on the specific tile that just landed after a drop
+   (see dbPlayArriveAnimation) — on top of the normal dbTileEnter every
+   fresh tile gets, so the one you actually moved stands out for a beat. */
+.db-tile.db-just-arrived {
+  animation: dbJustArrived .32s ease-out;
+}
+
+@keyframes dbJustArrived {
+  0% { transform: scale(1.35); box-shadow: 0 0 16px rgba(255, 217, 74, .9); }
+  100% { transform: scale(1); }
+}
+
+.db-status-bar {
+  flex: 0 0 auto;
+  padding: 6px 10px max(6px, env(safe-area-inset-bottom));
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(11px, 2.8vw, 13px);
+  color: #40ff70;
+  background: rgba(0,0,0,.3);
+  border-top: 1px solid #0a2e2a;
+}
+
+.db-status-bar.warning {
+  color: #ffcf4a;
 }

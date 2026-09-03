@@ -119,6 +119,29 @@ window.Progression = (() => {
     state.itemCounts[itemName] = (state.itemCounts[itemName] || 0) + amount;
   }
 
+  // --- Shop: buy MORE copies of an item you've already discovered.
+  // Deliberately can't buy something you've never unlocked — that would
+  // bypass the whole "discover it via Campaign/Quick Battle" mystery
+  // system. This is just a reliable way to stock up on things you
+  // already know about, instead of hoping for another random drop.
+  const SHOP_ITEM_PRICE = 25;
+
+  function buyItem(itemName) {
+    if (!isItemUnlocked(itemName)) {
+      return { success: false, reason: "locked" };
+    }
+
+    if (state.coins < SHOP_ITEM_PRICE) {
+      return { success: false, reason: "coins", cost: SHOP_ITEM_PRICE };
+    }
+
+    state.coins -= SHOP_ITEM_PRICE;
+    grantItem(itemName, 1);
+    persist();
+
+    return { success: true, cost: SHOP_ITEM_PRICE };
+  }
+
   // --- Card instances & merge-upgrades ---
   const MAX_CARD_LEVEL = 5;
   // HP bonus was 5 before the Animation-Throwdown-style rebalance
@@ -476,6 +499,8 @@ window.Progression = (() => {
     isWorldUnlocked,
     isWorldCompleted,
     isItemUnlocked,
+    buyItem,
+    SHOP_ITEM_PRICE,
     getOwnedItemCount,
     getInstance,
     getInstancesByCardName,

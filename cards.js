@@ -31,10 +31,15 @@ window.CardData = (() => {
     { name: "ציפס אמריקאי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/chips.jpg" },
     { name: "רכב", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/car.png" },
     { name: "בית", type: "item", atkBonus: 1, hpBonus: 5, image: "../images/house.jpg" },
+
+    // חתול/קטשופ/דגדוגים are primarily WEAKNESS-trigger items (see the
+    // weaknesses[] arrays above) — Fusion with them is a plain no-op
+    // (0/0), by request: no stat penalty for using them in a Fusion.
+    // מיקرופון also has no combo yet, same 0/0 for now.
     { name: "חתול", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/cat.png" },
     { name: "קטשופ", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/ketshup.png" },
     { name: "דגדוגים", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/digdugim.png" },
-    { name: "מיקרופון", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/microphone.webp" },
+    { name: "מיקרופון", type: "item", atkBonus: 0, hpBonus: 0, image: "../images/microphone.png" },
     { name: "רכבת", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/train.jpg" },
     { name: "מכחול", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/mikhol.jpg" },
     { name: "מחשב", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/computer.jpg" },
@@ -42,7 +47,7 @@ window.CardData = (() => {
     // New items
     { name: "צמח", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/plant.png" },
     { name: "ציוד רופא", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/doctor_kit.png" },
-    { name: "חוף ים", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/beach.png" },
+    { name: "חוף ים", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/beach.jpg" },
 
     // New items
     { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/hamburger.png" },

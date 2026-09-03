@@ -169,7 +169,13 @@ function placeBossCard(cardName, slotIndex, enemyLevel) {
 
   const boardCard = createBoardCard(def);
   boardCard.isFusion = !!def.isFusion;
-  boardCard.justPlaced = false;
+  // Pre-placed boss cards used to skip the "wait a turn" rule entirely
+  // (justPlaced: false), meaning they could attack on the very FIRST
+  // turn, before the player even gets to act once. That's a real
+  // "impossible to win" difficulty spike, not intentional boss
+  // strength — a pre-placed boss should follow the exact same rule a
+  // player's own fresh placement does.
+  boardCard.justPlaced = true;
 
   if (enemyLevel > 1) {
     const leveled = window.Progression.getStatsAtLevel(boardCard.atk, boardCard.hp, enemyLevel);
@@ -272,7 +278,6 @@ function render() {
   document.getElementById("aiHpBar").style.width =
     Math.max(0, (aiHp / MAX_HP) * 100) + "%";
 
-  const phaseStatus = document.getElementById("phaseStatus");
   const skipBtn = document.getElementById("skipTurnBtn");
   const handArea = document.getElementById("handArea");
 
@@ -285,18 +290,6 @@ function render() {
   handArea.classList.toggle("collapsed", !isPlayerTurnToAct);
 
   skipBtn.classList.toggle("hidden", !stuck);
-
-  if (gameEnded) {
-    phaseStatus.innerText = "המשחק הסתיים";
-  } else if (actionLocked) {
-    phaseStatus.innerText = "מבצע פעולות...";
-  } else if (stuck) {
-    phaseStatus.innerText = "אין מהלך אפשרי";
-  } else if (turn === "player") {
-    phaseStatus.innerText = "בחר קלף";
-  } else {
-    phaseStatus.innerText = "תור היריב";
-  }
 
   renderHand();
   renderBoard("player");
@@ -517,8 +510,16 @@ function renderBoard(owner) {
 
 function getCardHtml(card) {
   const buff = card.tempAttackBonus || 0;
-  const atkValue = (card.atk ?? card.atkBonus ?? 1) + buff;
-  const hpValue = card.hp ?? card.hpBonus ?? 0;
+  // Mirrors createBoardCard's exact fallback math, so an item's hand
+  // preview honestly matches what it becomes if placed standalone.
+  // NOTE: createBoardCard's hp fallback is a flat 12 — it does NOT fall
+  // back through hpBonus (hpBonus only ever matters during Fusion, added
+  // to a character's current hp). Using hpBonus as a fallback here would
+  // leak a literal negative number into the preview for items like
+  // דגדוגים that now have a negative hpBonus (see cards.js) — so this
+  // stays a flat 12, matching reality exactly.
+  const atkValue = (card.atk ?? Math.max(1, card.atkBonus || 1)) + buff;
+  const hpValue = card.hp ?? 12;
 
   const visibleSkills = card.skills || [];
   const skillHtml = visibleSkills.length
@@ -648,6 +649,16 @@ async function playCardOnSlot(slotIndex) {
 
   const wasFusion = !!target;
 
+  // Know BEFORE calling fuseCards whether this will trigger the full
+  // "FUSION!" screen animation (only named combos get one — a generic
+  // upgrade doesn't), so we know whether to actually wait for it below.
+  let isNamedComboFusion = false;
+  if (wasFusion) {
+    const character = draggedCard.type === "character" ? draggedCard : target;
+    const item = draggedCard.type === "item" ? draggedCard : target;
+    isNamedComboFusion = !!combos[`${character.name}|${item.name}`];
+  }
+
   if (!target) {
     playerBoard[slotIndex] = createBoardCard(draggedCard);
     log(`${draggedCard.name} נכנס לעמדה ${slotIndex + 1}.`);
@@ -656,6 +667,15 @@ async function playCardOnSlot(slotIndex) {
   }
 
   render();
+
+  // Let the "FUSION!" screen animation actually finish playing before
+  // anything else happens (weakness checks, skill banners, attack
+  // phase...) — it used to fire off the animation and immediately move
+  // on, so the next phase's own banner could appear while FUSION! was
+  // still on screen.
+  if (isNamedComboFusion) {
+    await effects.wait(900);
+  }
 
   await resolveWeaknessTrigger("player", slotIndex);
   if (checkGameOver()) return;
@@ -697,10 +717,34 @@ function fuseCards(cardA, cardB) {
 
     log(`🔥 FUSION! ${combo.name}`);
 
+    // The combo's atk/hp in combos.js are tuned against the character's
+    // BASE (level 1, undamaged) stats — but the card actually being
+    // fused might be leveled up, already damaged, or both. Treating
+    // combo.atk/combo.hp as fixed absolute numbers meant fusing a
+    // half-dead level-1 Ofek could suddenly jump to a fixed 22 HP —
+    // completely disconnected from what was actually on the board.
+    //
+    // Instead: figure out how much stronger the combo makes a PRISTINE
+    // base character (the delta), then apply that same delta on top of
+    // whatever this specific card's current stats actually are. This
+    // also means WHICH copy you fuse matters strategically — fusing a
+    // damaged copy carries its damage into the result (rescuing it, but
+    // at whatever HP it currently has); fusing a fresh/leveled copy
+    // gets the same boost from a higher starting point.
+    const baseCharacter = cards.find(c => c.name === character.name);
+    const atkDelta = combo.atk - (baseCharacter?.atk ?? combo.atk);
+    const hpDelta = combo.hp - (baseCharacter?.hp ?? combo.hp);
+
+    const resultAtk = Math.max(1, (character.atk || 0) + atkDelta);
+    const resultHp = Math.max(1, (character.hp || 0) + hpDelta);
+    const resultMaxHp = Math.max(1, (character.maxHp ?? character.hp ?? 0) + hpDelta);
+
     return {
       ...structuredClone(combo),
       type: "character",
-      maxHp: combo.hp,
+      atk: resultAtk,
+      hp: resultHp,
+      maxHp: resultMaxHp,
       item: item.name,
       isFusion: true,
       shield: 0,
@@ -746,7 +790,22 @@ function getFusionResult(cardA, cardB) {
   const item = cardA.type === "item" ? cardA : cardB;
   const combo = combos[`${character.name}|${item.name}`];
 
-  if (combo) return combo;
+  if (combo) {
+    // Same delta-based math as fuseCards's combo branch — the preview
+    // has to show the REAL resulting stats (relative to this specific
+    // card's current hp/atk), not the combo's fixed base-line numbers,
+    // or the preview would lie about what you're about to get.
+    const baseCharacter = cards.find(c => c.name === character.name);
+    const atkDelta = combo.atk - (baseCharacter?.atk ?? combo.atk);
+    const hpDelta = combo.hp - (baseCharacter?.hp ?? combo.hp);
+
+    return {
+      name: combo.name,
+      image: combo.image,
+      atk: Math.max(1, (character.atk || 0) + atkDelta),
+      hp: Math.max(1, (character.hp || 0) + hpDelta)
+    };
+  }
 
   return {
     name: "שדרוג רגיל",
@@ -796,10 +855,6 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
     if (checkGameOver()) return;
   }
 
-  await resolveSkills("player", "beforeAttack");
-
-  if (checkGameOver()) return;
-
   // No more "skip the whole attack phase on turn 1" special case — the
   // justPlaced flag on every card already makes turn 1 a no-op attack
   // phase naturally (everyone's cards are freshly placed, so they all
@@ -807,8 +862,18 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
   // top of that meant a card's justPlaced flag never actually got
   // consumed during turn 1 (since autoAttack never ran), so it silently
   // ate ANOTHER turn later before the card could attack at all.
+  //
+  // The phase banner now plays BEFORE beforeAttack skills resolve (not
+  // just before the lane attacks) — skills like Punch deal damage too,
+  // so showing "ATTACK PHASE!" only after that damage already happened
+  // looked backwards.
   effects.playPhase("ATTACK PHASE!");
-  await effects.wait(900);
+  await effects.wait(500);
+
+  await resolveSkills("player", "beforeAttack");
+
+  if (checkGameOver()) return;
+
   await autoAttack("player");
 
   if (checkGameOver()) return;
@@ -834,9 +899,15 @@ async function runAiTurn() {
 
   if (move) {
     const card = aiHand[move.handIndex];
+    let aiIsNamedComboFusion = false;
 
     if (move.type === "fusion") {
-      aiBoard[move.slotIndex] = fuseCards(card, aiBoard[move.slotIndex]);
+      const target = aiBoard[move.slotIndex];
+      const character = card.type === "character" ? card : target;
+      const item = card.type === "item" ? card : target;
+      aiIsNamedComboFusion = !!combos[`${character.name}|${item.name}`];
+
+      aiBoard[move.slotIndex] = fuseCards(card, target);
       log("היריב עשה Fusion.");
       aiWasFusion = true;
     } else {
@@ -847,7 +918,11 @@ async function runAiTurn() {
     aiActionSlotIndex = move.slotIndex;
     aiHand.splice(move.handIndex, 1);
     render();
-    await effects.wait(550);
+    // Same "let the FUSION! animation actually finish" fix as the
+    // player's side — a plain placement/generic upgrade only needs the
+    // normal short beat, but a named combo needs enough time for its
+    // full screen animation.
+    await effects.wait(aiIsNamedComboFusion ? 900 : 550);
 
     await resolveWeaknessTrigger("ai", move.slotIndex);
     if (checkGameOver()) return;
@@ -858,12 +933,15 @@ async function runAiTurn() {
     if (checkGameOver()) return;
   }
 
+  // Banner plays BEFORE beforeAttack skills resolve — same fix as the
+  // player's turn above.
+  effects.playPhase("AI ATTACK!");
+  await effects.wait(500);
+
   await resolveSkills("ai", "beforeAttack");
 
   if (checkGameOver()) return;
 
-  effects.playPhase("AI ATTACK!");
-  await effects.wait(900);
   await autoAttack("ai");
 
   if (checkGameOver()) return;
@@ -1096,15 +1174,26 @@ function checkGameOver() {
       const result = window.Progression.completeStage(currentBattleConfig.stageId);
       effects.showGameEndScreen(true, () => {
         window.CampaignUI?.onStageComplete(result);
-      }, { rewards: result, continueLabel: "המשך" });
+      }, {
+        rewards: result,
+        continueLabel: "המשך",
+        onHome: () => window.UI.showScreen("homeScreen")
+      });
     } else if (won && currentBattleConfig?.isQuickBattle) {
       const granted = window.Progression.rollQuickBattleReward(currentBattleConfig.rewardConfig);
-      effects.showGameEndScreen(true, () => location.reload(), {
+      effects.showGameEndScreen(true, () => window.startBattle(currentBattleConfig), {
         rewards: { granted },
-        continueLabel: "שחק שוב"
+        continueLabel: "שחק שוב",
+        onHome: () => window.UI.showScreen("homeScreen")
       });
     } else {
-      effects.showGameEndScreen(won, () => location.reload());
+      // Any loss (campaign or quick battle) — "try again" retries the
+      // EXACT same battle directly (no page reload needed now that
+      // resetBattleState() properly clears everything), and there's
+      // always a clear, separate way back to the main menu.
+      effects.showGameEndScreen(won, () => window.startBattle(currentBattleConfig), {
+        onHome: () => window.UI.showScreen("homeScreen")
+      });
     }
 
     return true;

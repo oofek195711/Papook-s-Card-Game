@@ -85,8 +85,9 @@ window.GameEffects = (() => {
     backdrop.className = `game-end-backdrop ${won ? "won" : "lost"}`;
 
     const title = won ? "🏆 ניצחת!" : "💀 הפסדת";
-    const subtitle = won ? "כל הכבוד, ניצחת את היריב!" : "היריב ניצח הפעם. ננסה שוב?";
-    const buttonLabel = options.continueLabel || "שחק שוב";
+    const subtitle = won ? "כל הכבוד, ניצחת את היריב!" : "היריב ניצח הפעם.";
+    const continueLabel = options.continueLabel || "שחק שוב";
+    const onHome = options.onHome || (() => location.reload());
 
     const rewardsHtml = buildRewardsHtml(options.rewards);
 
@@ -95,15 +96,23 @@ window.GameEffects = (() => {
         <div class="game-end-title">${title}</div>
         <div class="game-end-subtitle">${subtitle}</div>
         ${rewardsHtml}
-        <button type="button" class="game-end-button">${buttonLabel}</button>
+        <div class="game-end-buttons">
+          <button type="button" class="game-end-button secondary" id="gameEndHomeBtn">🏠 לתפריט הראשי</button>
+          <button type="button" class="game-end-button" id="gameEndContinueBtn">${continueLabel}</button>
+        </div>
       </div>
     `;
 
     document.body.appendChild(backdrop);
 
-    backdrop.querySelector(".game-end-button").onclick = () => {
+    backdrop.querySelector("#gameEndContinueBtn").onclick = () => {
       backdrop.remove();
       onContinue();
+    };
+
+    backdrop.querySelector("#gameEndHomeBtn").onclick = () => {
+      backdrop.remove();
+      onHome();
     };
   }
 

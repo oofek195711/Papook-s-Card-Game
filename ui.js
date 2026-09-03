@@ -248,6 +248,50 @@ window.UI = (() => {
       .join("");
   }
 
+  // --- Shop: buy MORE copies of items you've already discovered. Never
+  // sells anything you haven't unlocked yet — that stays a Campaign/
+  // Quick Battle discovery, the shop is just a reliable way to restock.
+
+  function shopTileHtml(card) {
+    const P = window.Progression;
+    const owned = P.getOwnedItemCount(card.name);
+    const price = P.SHOP_ITEM_PRICE;
+    const canAfford = P.getCoins() >= price;
+
+    return `
+      <div class="collection-card">
+        <img src="${card.image}" class="collection-card-img" alt="${card.name}">
+        <div class="collection-card-name">${card.name}</div>
+        <div class="collection-owned-badge">יש לך: ${owned}</div>
+        <button type="button" class="shop-buy-btn ${canAfford ? "" : "disabled"}"
+          data-item-name="${card.name}" ${canAfford ? "" : "disabled"}>
+          🛒 קנה (💰${price})
+        </button>
+      </div>
+    `;
+  }
+
+  function renderShop() {
+    const grid = document.getElementById("shopGrid");
+    const P = window.Progression;
+
+    const unlockedItems = cards.filter(c => c.type === "item" && P.isItemUnlocked(c.name));
+
+    grid.innerHTML = unlockedItems.length
+      ? unlockedItems.map(shopTileHtml).join("")
+      : `<div class="coming-soon">עדיין לא פתחת אף חפץ — נצחונות בקמפיין ובקרב מהיר פותחים חפצים חדשים.</div>`;
+
+    grid.querySelectorAll(".shop-buy-btn:not(.disabled)").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const result = P.buyItem(btn.dataset.itemName);
+        if (result.success) {
+          updateCoinsDisplay();
+          renderShop();
+        }
+      });
+    });
+  }
+
   // --- Fusion tab: every combo you've ALREADY discovered (its item is
   // unlocked) shows in full; anything else is a total mystery — no name,
   // no image, no stats. Since every combo needs an unlocked item to ever
@@ -308,133 +352,402 @@ window.UI = (() => {
   // -/+ stepper since you can own (and include) several copies of the
   // same item. Everything auto-saves immediately, no separate "save".
 
-  function updateDeckCountBadge() {
+  // === Deck Builder (two-panel: my deck / my collection) ===
+  //
+  // Reuses the EXACT existing Progression API — getDeckSelection,
+  // isInstanceInDeck, toggleDeckInstance, getDeckItemCount,
+  // setDeckItemCount, getOwnedItemCount, getDeckCount, MIN_DECK_SIZE,
+  // MAX_DECK_CHARACTERS — nothing new was added there. This section is
+  // purely a new UI on top of data/logic that already existed.
+
+  let dbSelectedInstanceId = null; // for merge-candidate highlighting AND fusion glow
+  let dbFilter = "all";            // "all" | "character" | "item"
+  let dbStatusFlashTimer = null;
+  let dbDrag = null;               // active drag state, see dbStartDrag
+
+  // Does this item have a DEFINED combo with this character? (Only used
+  // to decide what glows — never touches how Fusion itself resolves.)
+  function dbHasCombo(characterName, itemName) {
+    return !!combos[`${characterName}|${itemName}`];
+  }
+
+  function dbCharacterHasInstanceInDeck(characterName) {
+    const P = window.Progression;
+    return P.getInstancesByCardName(characterName).some(i => P.isInstanceInDeck(i.instanceId));
+  }
+
+  function dbSelectedCharacterName() {
+    if (!dbSelectedInstanceId) return null;
+    return window.Progression.getInstance(dbSelectedInstanceId)?.cardName || null;
+  }
+
+  function dbCharacterTileHtml(instance, baseCard, location) {
+    const P = window.Progression;
+    const leveled = P.getStatsAtLevel(baseCard.atk, baseCard.hp, instance.level);
+    const isSelected = dbSelectedInstanceId === instance.instanceId;
+
+    // Merge candidate: any OTHER owned instance with the same name+level
+    // as whatever is currently selected — regardless of which panel it's
+    // in, since merging cares about the instances, not their location.
+    let isMergeCandidate = false;
+    if (dbSelectedInstanceId && !isSelected) {
+      const selected = P.getInstance(dbSelectedInstanceId);
+      isMergeCandidate = !!selected
+        && selected.cardName === instance.cardName
+        && selected.level === instance.level;
+    }
+
+    return `
+      <div class="db-tile db-tile-character ${isSelected ? "db-selected" : ""} ${isMergeCandidate ? "db-merge-candidate" : ""}"
+        data-instance-id="${instance.instanceId}" data-card-name="${baseCard.name}" data-location="${location}">
+        <img src="${baseCard.image}" class="db-tile-img" alt="${baseCard.name}">
+        <span class="db-tile-level">Lv.${instance.level}</span>
+        <div class="db-tile-name">${baseCard.name}</div>
+        <div class="db-tile-stats"><span>⚔️${leveled.atk}</span><span>❤️${leveled.hp}</span></div>
+        ${isMergeCandidate ? `<div class="db-merge-hint">מזג!</div>` : ""}
+      </div>
+    `;
+  }
+
+  function dbItemTileHtml(card, location) {
+    const selectedCharacter = dbSelectedCharacterName();
+    const hasFusion = selectedCharacter && dbHasCombo(selectedCharacter, card.name);
+    const fusionReady = hasFusion && location === "deck"
+      && dbCharacterHasInstanceInDeck(selectedCharacter);
+
+    return `
+      <div class="db-tile db-tile-item ${hasFusion ? "db-fusion-glow" : ""}"
+        data-item-name="${card.name}" data-location="${location}">
+        <img src="${card.image}" class="db-tile-img" alt="${card.name}">
+        <div class="db-tile-name">${card.name}</div>
+        <div class="db-tile-stats"><span>⚔️+${card.atkBonus || 0}</span><span>❤️+${card.hpBonus || 0}</span></div>
+        ${fusionReady ? `<div class="db-fusion-ready">🟣 FUSION READY</div>` : ""}
+      </div>
+    `;
+  }
+
+  function dbFlashStatus(message) {
+    const statusBar = document.getElementById("dbStatusBar");
+    clearTimeout(dbStatusFlashTimer);
+    statusBar.innerText = `⚠️ ${message}`;
+    statusBar.classList.add("warning");
+    dbStatusFlashTimer = setTimeout(dbUpdateStatsBar, 1800);
+  }
+
+  function dbPointInRect(x, y, rect) {
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }
+
+  function dbTileData(tileEl) {
+    if (tileEl.classList.contains("db-tile-character")) {
+      return {
+        type: "character",
+        instanceId: tileEl.dataset.instanceId,
+        cardName: tileEl.dataset.cardName,
+        location: tileEl.dataset.location
+      };
+    }
+    return { type: "item", itemName: tileEl.dataset.itemName, location: tileEl.dataset.location };
+  }
+
+  // --- Tap: select for the Fusion-glow indicator, or (tapping a second
+  // matching character) trigger the SAME merge-confirm flow already used
+  // in Collection — no new merge system, just calling into it here too.
+  async function dbHandleTap(tileEl, data) {
+    if (data.type !== "character") return; // items have no tap behavior of their own
+
+    const P = window.Progression;
+
+    if (dbSelectedInstanceId && dbSelectedInstanceId !== data.instanceId) {
+      const first = P.getInstance(dbSelectedInstanceId);
+      const second = P.getInstance(data.instanceId);
+
+      if (first && second && first.cardName === second.cardName && first.level === second.level) {
+        if (second.level >= P.MAX_CARD_LEVEL) {
+          dbSelectedInstanceId = null;
+          dbRenderAll();
+          return;
+        }
+
+        const baseCard = cards.find(c => c.name === second.cardName);
+        const confirmed = baseCard && await showMergeConfirm(baseCard, second.level);
+
+        dbSelectedInstanceId = null;
+
+        if (confirmed) {
+          const result = P.mergeUpgrade(first.instanceId, second.instanceId);
+          if (result.success) updateCoinsDisplay();
+        }
+
+        dbRenderAll();
+        return;
+      }
+    }
+
+    dbSelectedInstanceId = (dbSelectedInstanceId === data.instanceId) ? null : data.instanceId;
+    dbRenderAll();
+  }
+
+  // --- Drag: the actual way to move a card between the deck and
+  // collection panels now (tap is reserved for selection/merge above).
+  // Custom touch handling since native HTML5 drag has poor mobile
+  // support — same general approach as the battle board's own card
+  // dragging in script.js, just a separate implementation scoped to
+  // this screen's own DOM.
+
+  function dbGetPanelEls() {
+    return {
+      deck: document.querySelector(".db-panel-deck"),
+      collection: document.querySelector(".db-panel-collection")
+    };
+  }
+
+  function dbStartDrag(tileEl, clientX, clientY) {
+    const rect = tileEl.getBoundingClientRect();
+    const ghost = tileEl.cloneNode(true);
+    ghost.className = "db-tile db-drag-ghost";
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    document.body.appendChild(ghost);
+
+    tileEl.classList.add("db-dragging-source");
+
+    dbDrag = {
+      tileEl,
+      ghost,
+      data: dbTileData(tileEl),
+      startX: clientX,
+      startY: clientY,
+      offsetX: clientX - rect.left,
+      offsetY: clientY - rect.top,
+      moved: false
+    };
+  }
+
+  function dbMoveDrag(clientX, clientY) {
+    if (!dbDrag) return;
+
+    if (!dbDrag.moved && (Math.abs(clientX - dbDrag.startX) > 8 || Math.abs(clientY - dbDrag.startY) > 8)) {
+      dbDrag.moved = true;
+    }
+
+    dbDrag.ghost.style.left = `${clientX - dbDrag.offsetX}px`;
+    dbDrag.ghost.style.top = `${clientY - dbDrag.offsetY}px`;
+
+    const { deck, collection } = dbGetPanelEls();
+    deck?.classList.toggle("db-drop-hover", dbPointInRect(clientX, clientY, deck.getBoundingClientRect()));
+    collection?.classList.toggle("db-drop-hover", dbPointInRect(clientX, clientY, collection.getBoundingClientRect()));
+  }
+
+  function dbEndDrag(clientX, clientY) {
+    if (!dbDrag) return;
+    const { tileEl, ghost, data, moved } = dbDrag;
+    const { deck, collection } = dbGetPanelEls();
+
+    deck?.classList.remove("db-drop-hover");
+    collection?.classList.remove("db-drop-hover");
+    ghost.remove();
+    tileEl.classList.remove("db-dragging-source");
+    dbDrag = null;
+
+    if (!moved) {
+      dbHandleTap(tileEl, data);
+      return;
+    }
+
+    const droppedOnDeck = deck && dbPointInRect(clientX, clientY, deck.getBoundingClientRect());
+    const droppedOnCollection = collection && dbPointInRect(clientX, clientY, collection.getBoundingClientRect());
+    const targetLocation = droppedOnDeck ? "deck" : droppedOnCollection ? "collection" : null;
+
+    if (!targetLocation || targetLocation === data.location) return; // dropped nowhere valid, or same panel
+
+    dbPerformMove(data, targetLocation);
+  }
+
+  function dbPerformMove(data, targetLocation) {
+    const P = window.Progression;
+    const movingIntoDeck = targetLocation === "deck";
+
+    if (data.type === "character") {
+      if (movingIntoDeck) {
+        if (P.getDeckCount().characters >= P.MAX_DECK_CHARACTERS) {
+          dbFlashStatus(`אפשר לכלול עד ${P.MAX_DECK_CHARACTERS} דמויות בחפיסה.`);
+          return;
+        }
+      } else if (P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
+        dbFlashStatus(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
+        return;
+      }
+
+      P.toggleDeckInstance(data.instanceId);
+      dbRenderAll();
+      dbPlayArriveAnimation(targetLocation, `[data-instance-id="${data.instanceId}"]`);
+    } else {
+      const current = P.getDeckItemCount(data.itemName);
+
+      if (!movingIntoDeck && P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
+        dbFlashStatus(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
+        return;
+      }
+
+      P.setDeckItemCount(data.itemName, movingIntoDeck ? current + 1 : current - 1);
+      dbRenderAll();
+      dbPlayArriveAnimation(targetLocation, `[data-item-name="${data.itemName}"]`);
+    }
+  }
+
+  // A little "just arrived" pop, on top of the normal dbTileEnter every
+  // fresh tile already gets — makes the specific card that was dragged
+  // stand out for a beat rather than blending in with the rest.
+  function dbPlayArriveAnimation(targetLocation, selector) {
+    const gridId = targetLocation === "deck" ? "dbDeckGrid" : "dbCollectionGrid";
+    const grid = document.getElementById(gridId);
+    const tile = grid?.querySelector(selector);
+    if (!tile) return;
+    tile.classList.add("db-just-arrived");
+    setTimeout(() => tile.classList.remove("db-just-arrived"), 320);
+  }
+
+  function dbWireTileInteractions(container) {
+    container.querySelectorAll(".db-tile").forEach(tile => {
+      tile.addEventListener("touchstart", event => {
+        const t = event.touches[0];
+        dbStartDrag(tile, t.clientX, t.clientY);
+      }, { passive: true });
+
+      tile.addEventListener("touchmove", event => {
+        if (!dbDrag) return;
+        const t = event.touches[0];
+        dbMoveDrag(t.clientX, t.clientY);
+      }, { passive: true });
+
+      tile.addEventListener("touchend", () => {
+        if (!dbDrag) return;
+        // touchend has no coordinates of its own — reuse the ghost's
+        // last known center as the drop point.
+        const rect = dbDrag.ghost.getBoundingClientRect();
+        dbEndDrag(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+
+      // Mouse equivalents, for desktop testing.
+      tile.addEventListener("mousedown", event => {
+        event.preventDefault();
+        dbStartDrag(tile, event.clientX, event.clientY);
+
+        const onMove = moveEvent => dbMoveDrag(moveEvent.clientX, moveEvent.clientY);
+        const onUp = upEvent => {
+          dbEndDrag(upEvent.clientX, upEvent.clientY);
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        };
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    });
+  }
+
+  function dbRenderDeckPanel() {
+    const P = window.Progression;
+    const grid = document.getElementById("dbDeckGrid");
+    const deckSelection = P.getDeckSelection();
+    const progress = P.getProgress();
+
+    const characterEntries = deckSelection.instanceIds
+      .map(id => progress.ownedInstances.find(i => i.instanceId === id))
+      .filter(Boolean)
+      .map(inst => ({ inst, base: cards.find(c => c.name === inst.cardName) }))
+      .filter(entry => entry.base)
+      .sort((a, b) => {
+        if (a.inst.cardName !== b.inst.cardName) return a.inst.cardName.localeCompare(b.inst.cardName, "he");
+        return b.inst.level - a.inst.level;
+      });
+
+    const itemTiles = [];
+    Object.entries(deckSelection.itemCounts || {}).forEach(([name, count]) => {
+      const base = cards.find(c => c.name === name && c.type === "item");
+      if (!base || count <= 0) return;
+      for (let i = 0; i < count; i++) itemTiles.push(base);
+    });
+
+    let html = "";
+    if (dbFilter === "all" || dbFilter === "character") {
+      html += characterEntries.map(({ inst, base }) => dbCharacterTileHtml(inst, base, "deck")).join("");
+    }
+    if (dbFilter === "all" || dbFilter === "item") {
+      html += itemTiles.map(base => dbItemTileHtml(base, "deck")).join("");
+    }
+
+    grid.innerHTML = html || `<div class="db-empty-hint">החפיסה ריקה — הקש על קלפים באוסף כדי להוסיף.</div>`;
+    dbWireTileInteractions(grid);
+  }
+
+  function dbRenderCollectionPanel() {
+    const P = window.Progression;
+    const grid = document.getElementById("dbCollectionGrid");
+    const progress = P.getProgress();
+
+    const availableEntries = progress.ownedInstances
+      .filter(inst => !P.isInstanceInDeck(inst.instanceId))
+      .map(inst => ({ inst, base: cards.find(c => c.name === inst.cardName) }))
+      .filter(entry => entry.base)
+      .sort((a, b) => {
+        if (a.inst.cardName !== b.inst.cardName) return a.inst.cardName.localeCompare(b.inst.cardName, "he");
+        return b.inst.level - a.inst.level;
+      });
+
+    const availableItemTiles = [];
+    cards.filter(c => c.type === "item" && P.isItemUnlocked(c.name)).forEach(base => {
+      const available = P.getOwnedItemCount(base.name) - P.getDeckItemCount(base.name);
+      for (let i = 0; i < available; i++) availableItemTiles.push(base);
+    });
+
+    let html = "";
+    if (dbFilter === "all" || dbFilter === "character") {
+      html += availableEntries.map(({ inst, base }) => dbCharacterTileHtml(inst, base, "collection")).join("");
+    }
+    if (dbFilter === "all" || dbFilter === "item") {
+      html += availableItemTiles.map(base => dbItemTileHtml(base, "collection")).join("");
+    }
+
+    grid.innerHTML = html || `<div class="db-empty-hint">הכל כבר בחפיסה.</div>`;
+    dbWireTileInteractions(grid);
+  }
+
+  function dbUpdateStatsBar() {
     const P = window.Progression;
     const counts = P.getDeckCount();
     const owned = P.getTotalOwnedCount();
-    const badge = document.getElementById("deckCountBadge");
-    if (badge) {
-      badge.innerText = `${counts.total} מתוך ${owned} קלפים · ${counts.characters}/${P.MAX_DECK_CHARACTERS} דמויות`;
-    }
-  }
 
-  function deckCharacterTileHtml(instance, baseCard) {
-    const P = window.Progression;
-    const leveled = P.getStatsAtLevel(baseCard.atk, baseCard.hp, instance.level);
-    const inDeck = P.isInstanceInDeck(instance.instanceId);
+    document.getElementById("dbMainCounter").innerText = `${counts.total} / ${owned}`;
+    document.getElementById("dbCharCount").innerText = `${counts.characters}/${P.MAX_DECK_CHARACTERS} דמויות`;
+    document.getElementById("dbItemCount").innerText = `${counts.itemCopies} חפצים`;
 
-    return `
-      <div class="collection-card deck-tile ${inDeck ? "in-deck" : "out-deck"}"
-        data-instance-id="${instance.instanceId}">
-        <img src="${baseCard.image}" class="collection-card-img" alt="${baseCard.name}">
-        <div class="collection-card-name">${baseCard.name}</div>
-        <div class="collection-level-row"><span class="collection-level-badge">Lv.${instance.level}</span></div>
-        <div class="collection-stats"><span>⚔️ ${leveled.atk}</span><span>❤️ ${leveled.hp}</span></div>
-        <div class="deck-toggle-hint">${inDeck ? "✅ בחפיסה" : "➕ הוסף לחפיסה"}</div>
-      </div>
-    `;
-  }
+    const statusBar = document.getElementById("dbStatusBar");
+    statusBar.classList.remove("warning");
 
-  // Items get a real quantity stepper (0 up to however many you own) —
-  // not just an on/off switch, since owning and using multiple copies
-  // of the same item is the whole point now.
-  function deckItemTileHtml(card) {
-    const P = window.Progression;
-    const owned = P.getOwnedItemCount(card.name);
-    const inDeck = P.getDeckItemCount(card.name);
-
-    return `
-      <div class="collection-card deck-tile ${inDeck > 0 ? "in-deck" : "out-deck"}" data-item-name="${card.name}">
-        <img src="${card.image}" class="collection-card-img" alt="${card.name}">
-        <div class="collection-card-name">${card.name}</div>
-        <div class="collection-stats"><span>⚔️ +${card.atkBonus || 0}</span><span>❤️ +${card.hpBonus || 0}</span></div>
-        <div class="collection-owned-badge">יש לך: ${owned}</div>
-        <div class="deck-item-stepper">
-          <button type="button" class="deck-stepper-btn deck-stepper-minus" ${inDeck <= 0 ? "disabled" : ""}>−</button>
-          <span class="deck-stepper-count">${inDeck}</span>
-          <button type="button" class="deck-stepper-btn deck-stepper-plus" ${inDeck >= owned ? "disabled" : ""}>+</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderDeckScreen(filterType) {
-    const grid = document.getElementById("deckGrid");
-    const scrollTop = grid.scrollTop;
-    const P = window.Progression;
-
-    if (filterType === "character") {
-      const instances = [...P.getProgress().ownedInstances].sort((a, b) => {
-        if (a.cardName !== b.cardName) return a.cardName.localeCompare(b.cardName, "he");
-        return b.level - a.level;
-      });
-
-      grid.innerHTML = instances
-        .map(inst => {
-          const baseCard = cards.find(c => c.name === inst.cardName);
-          return baseCard ? deckCharacterTileHtml(inst, baseCard) : "";
-        })
-        .join("");
-
-      grid.querySelectorAll(".deck-tile[data-instance-id]").forEach(el => {
-        el.addEventListener("click", () => {
-          const instanceId = el.dataset.instanceId;
-          const currentlyIn = P.isInstanceInDeck(instanceId);
-
-          if (currentlyIn) {
-            if (P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
-              alert(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
-              return;
-            }
-          } else if (P.getDeckCount().characters >= P.MAX_DECK_CHARACTERS) {
-            alert(`אפשר לכלול עד ${P.MAX_DECK_CHARACTERS} דמויות בחפיסה. הוצא אחת כדי להוסיף אחרת.`);
-            return;
-          }
-
-          P.toggleDeckInstance(instanceId);
-          renderDeckScreen("character");
-        });
-      });
+    if (counts.total >= P.MIN_DECK_SIZE) {
+      statusBar.innerText = "✅ החפיסה מוכנה לקרב";
     } else {
-      const items = cards.filter(c => c.type === "item" && P.isItemUnlocked(c.name));
-      grid.innerHTML = items.map(deckItemTileHtml).join("");
-
-      grid.querySelectorAll(".deck-stepper-minus").forEach(btn => {
-        btn.addEventListener("click", event => {
-          event.stopPropagation();
-          const itemName = btn.closest(".deck-tile").dataset.itemName;
-          const current = P.getDeckItemCount(itemName);
-          if (current <= 0) return;
-          if (P.getDeckCount().total - 1 < P.MIN_DECK_SIZE) {
-            alert(`החפיסה חייבת להכיל לפחות ${P.MIN_DECK_SIZE} קלפים.`);
-            return;
-          }
-          P.setDeckItemCount(itemName, current - 1);
-          renderDeckScreen("item");
-        });
-      });
-
-      grid.querySelectorAll(".deck-stepper-plus").forEach(btn => {
-        btn.addEventListener("click", event => {
-          event.stopPropagation();
-          const itemName = btn.closest(".deck-tile").dataset.itemName;
-          const current = P.getDeckItemCount(itemName);
-          P.setDeckItemCount(itemName, current + 1);
-          renderDeckScreen("item");
-        });
-      });
+      statusBar.innerText = `⚠️ חסרים ${P.MIN_DECK_SIZE - counts.total} קלפים`;
+      statusBar.classList.add("warning");
     }
-
-    grid.scrollTop = scrollTop;
-    updateDeckCountBadge();
   }
 
-  function initDeckTabs() {
-    document.querySelectorAll("#deckScreen .tab-btn").forEach(btn => {
+  function dbRenderAll() {
+    dbRenderDeckPanel();
+    dbRenderCollectionPanel();
+    dbUpdateStatsBar();
+  }
+
+  function initDbFilters() {
+    document.querySelectorAll(".db-filter-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("#deckScreen .tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".db-filter-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        renderDeckScreen(btn.dataset.deckTab);
+        dbFilter = btn.dataset.dbFilter;
+        dbRenderAll();
       });
     });
   }
@@ -611,9 +924,12 @@ window.UI = (() => {
     });
 
     document.getElementById("goDeckBtn").addEventListener("click", () => {
-      renderDeckScreen("character");
-      document.querySelectorAll("#deckScreen .tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelector('#deckScreen .tab-btn[data-deck-tab="character"]').classList.add("active");
+      dbSelectedInstanceId = null;
+      dbFilter = "all";
+      document.querySelectorAll(".db-filter-btn").forEach(b => b.classList.remove("active"));
+      const allBtn = document.querySelector('.db-filter-btn[data-db-filter="all"]');
+      if (allBtn) allBtn.classList.add("active");
+      dbRenderAll();
       showScreen("deckScreen");
     });
 
@@ -623,9 +939,17 @@ window.UI = (() => {
       showScreen("howToPlayScreen");
     });
 
+    // The coins display itself is the shop entry point now — tap your
+    // money, anywhere it's shown (not just Home), to go spend it.
+    document.getElementById("coinsDisplay").addEventListener("click", () => {
+      renderShop();
+      showScreen("shopScreen");
+    });
+
     document.getElementById("collectionBackBtn").addEventListener("click", () => showScreen("homeScreen"));
     document.getElementById("deckBackBtn").addEventListener("click", () => showScreen("homeScreen"));
     document.getElementById("howToPlayBackBtn").addEventListener("click", () => showScreen("homeScreen"));
+    document.getElementById("shopBackBtn").addEventListener("click", () => showScreen("homeScreen"));
 
     // Dev-only utility: wipe the local save (coins, unlocked items, card
     // instances, stage progress) and start over. Guarded by a confirm()
@@ -639,7 +963,7 @@ window.UI = (() => {
     });
 
     initTabs();
-    initDeckTabs();
+    initDbFilters();
     initHowToPlay();
     showScreen("homeScreen");
   }
