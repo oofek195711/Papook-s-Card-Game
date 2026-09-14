@@ -43,8 +43,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 8px;
+  gap: 7px;
+  padding: 6px;
   background:
     radial-gradient(circle at 50% 15%, rgba(255, 217, 102, 0.12), transparent 40%),
     linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
@@ -55,9 +55,9 @@ body {
 
 .home-title {
   position: relative;
-  margin: 0 0 10px;
-  padding: 8px 32px;
-  font-size: clamp(17px, 4.6vw, 27px);
+  margin: 0 0 4px;
+  padding: 6px 28px;
+  font-size: clamp(15px, 4vw, 23px);
   font-weight: 900;
   letter-spacing: .5px;
   color: #fff3d0;
@@ -99,19 +99,19 @@ body {
 
 .home-btn {
   flex: 0 0 auto;
-  width: min(80vw, 320px);
-  padding: 8px 18px;
+  width: min(78vw, 300px);
+  padding: 6px 16px;
   font-family: inherit;
-  font-size: clamp(13px, 3.2vw, 16px);
+  font-size: clamp(11px, 2.8vw, 14px);
   font-weight: 900;
   letter-spacing: .3px;
   border: 2px solid #d4af37;
-  border-radius: 10px;
+  border-radius: 9px;
   background: linear-gradient(180deg, #1c2b4a, #0a1120);
   color: #ffe066;
   text-shadow: 0 0 6px rgba(255, 217, 102, .5);
   box-shadow:
-    0 3px 0 #05070d,
+    0 2px 0 #05070d,
     inset 0 1px 0 rgba(255,255,255,.1),
     0 0 10px rgba(212, 175, 55, .25);
   cursor: pointer;
@@ -144,10 +144,41 @@ body {
   border-color: #b98cff;
 }
 
+.home-btn.campaign.locked {
+  opacity: .55;
+  filter: grayscale(.4);
+}
+
+.home-flash-message {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60000;
+  max-width: 90vw;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #ffd94a;
+  background: rgba(0,0,0,.9);
+  color: #ffe066;
+  font-weight: bold;
+  font-size: clamp(11px, 2.8vw, 13px);
+  text-align: center;
+  box-shadow: 0 0 14px rgba(255, 217, 74, .5);
+  animation: homeFlashPopIn .2s ease-out;
+}
+
+@keyframes homeFlashPopIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 .home-btn.howto {
   border-color: #7fc7ff;
-  font-size: clamp(11px, 2.8vw, 14px);
-  padding: 8px 18px;
+}
+
+.home-btn.research {
+  border-color: #bd18ff;
 }
 
 .sub-screen {
@@ -155,7 +186,11 @@ body {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(#163f39, #0c211d);
+  background:
+    linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
+    url("home-background.jpg");
+  background-size: cover;
+  background-position: center;
   overflow: hidden;
 }
 
@@ -174,6 +209,29 @@ body {
   flex: 1;
   font-size: clamp(15px, 3.8vw, 19px);
   color: #ffd94a;
+}
+
+.deck-count-badge {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.4);
+  border: 1px solid rgba(189, 24, 255, .5);
+  color: #e79bff;
+  font-size: clamp(9px, 2.2vw, 11px);
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.replay-tutorial-btn {
+  border-color: rgba(255, 217, 74, .6);
+  color: #ffd94a;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.replay-tutorial-btn:active {
+  transform: scale(.95);
 }
 
 .collection-owned-badge {
@@ -218,6 +276,27 @@ body {
   border-color: #444;
   color: #888;
   cursor: default;
+}
+
+.research-speedup-card {
+  border-color: #bd18ff;
+  box-shadow: 0 0 8px rgba(189, 24, 255, .35);
+}
+
+.research-speedup-icon {
+  font-size: 24px;
+}
+
+.research-speedup-desc {
+  font-size: 11px;
+  color: #e79bff;
+  font-weight: bold;
+}
+
+.research-speedup-btn:not(.disabled) {
+  border-color: #bd18ff !important;
+  background: linear-gradient(#e79bff, #bd18ff) !important;
+  color: #2a0033 !important;
 }
 
 .back-btn {
@@ -416,6 +495,8 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
   padding: 4px 12px 24px;
+  align-content: start;
+  align-items: start;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -494,62 +575,6 @@ body {
   border-color: #333;
   color: #888;
   cursor: default;
-}
-
-.collection-level-maxed {
-  font-size: 10px;
-  color: #9be89b;
-  font-weight: bold;
-}
-
-.instance-card {
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-}
-
-.instance-card:active {
-  transform: scale(.97);
-}
-
-.instance-card.selected {
-  border-color: #2ecc71;
-  box-shadow: 0 0 12px rgba(46, 204, 113, .6);
-}
-
-/* The clear "here's your other option" indicator for merging — a
-   distinct gold pulse (vs. the steady green of .selected), applied to
-   every OTHER owned copy that actually matches (same character, same
-   level) once one card is selected. */
-.instance-card.merge-candidate {
-  border-color: #ffd94a;
-  animation: mergeCandidatePulse 1s ease-in-out infinite;
-}
-
-@keyframes mergeCandidatePulse {
-  0%, 100% {
-    box-shadow: 0 0 6px rgba(255, 217, 74, .45);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(255, 217, 74, .95);
-    transform: scale(1.04);
-  }
-}
-
-.collection-merge-hint {
-  font-size: 9px;
-  color: #9be89b;
-  text-align: center;
-}
-
-.instance-card.selected .collection-merge-hint {
-  color: #40ff70;
-  font-weight: bold;
-}
-
-.collection-merge-hint.candidate {
-  color: #ffd94a;
-  font-weight: 900;
 }
 
 .fusion-chip.mystery {
@@ -676,6 +701,57 @@ body {
   animation: gameEndPop .18s ease-out;
 }
 
+.howto-glossary-card {
+  justify-content: flex-start;
+}
+
+.howto-glossary-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.howto-glossary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid #0a2e2a;
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+  text-align: right;
+}
+
+.howto-glossary-icon {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0,0,0,.5);
+  border: 1px solid #050505;
+  font-size: 15px;
+}
+
+.howto-glossary-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.howto-glossary-name {
+  font-weight: 900;
+  color: #ffd94a;
+  font-size: clamp(11px, 2.8vw, 13px);
+}
+
+.howto-glossary-desc {
+  font-size: clamp(10px, 2.4vw, 12px);
+  color: #ccc;
+  line-height: 1.35;
+}
+
 .howto-card.tip {
   border-color: rgba(255, 217, 74, .5);
   background: rgba(255, 217, 74, .08);
@@ -767,6 +843,12 @@ body {
   text-shadow: 0 0 6px rgba(255, 217, 102, .5);
   box-shadow: 0 2px 0 #05070d, inset 0 1px 0 rgba(255,255,255,.12), 0 0 10px rgba(212,175,55,.3);
   cursor: pointer;
+  animation: coinsDisplayInvite 2.4s ease-in-out infinite;
+}
+
+@keyframes coinsDisplayInvite {
+  0%, 100% { box-shadow: 0 2px 0 #05070d, inset 0 1px 0 rgba(255,255,255,.12), 0 0 10px rgba(212,175,55,.3); }
+  50% { box-shadow: 0 2px 0 #05070d, inset 0 1px 0 rgba(255,255,255,.12), 0 0 18px rgba(212,175,55,.65); }
 }
 
 .coins-display:active {
@@ -774,8 +856,25 @@ body {
 }
 
 .coins-shop-hint {
-  font-size: .85em;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 4px;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 217, 102, .35);
+}
+
+.coins-shop-icon {
+  font-size: 1.05em;
+  display: inline-block;
   animation: coinsShopHintPulse 1.8s ease-in-out infinite;
+}
+
+.coins-shop-label {
+  font-size: .68em;
+  font-weight: 900;
+  color: #fff3d0;
+  opacity: .9;
 }
 
 @keyframes coinsShopHintPulse {
@@ -794,6 +893,14 @@ body {
   text-decoration: underline;
   cursor: pointer;
   opacity: .8;
+}
+
+.home-version-tag {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: #556;
+  opacity: .7;
+  letter-spacing: .5px;
 }
 
 .speed-button {
@@ -1199,17 +1306,66 @@ body {
   z-index: 6;
   min-height: 0;
   margin: 0;
-  padding: 3px 4px;
+  padding: 2px 4px 3px;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   background: linear-gradient(#108ffc, #005297);
+  box-shadow: 0 2px 6px rgba(0,0,0,.55);
+}
+
+.card-name-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: clamp(9px, 1.55vw, 14px);
   line-height: 1.05;
   color: white;
   text-shadow: 1px 1px 0 #000;
-  box-shadow: 0 2px 6px rgba(0,0,0,.55);
+}
+
+/* The 5-diamond Rank Indicator — reads card.level (same field the rest
+   of the app already uses, see buildRankIndicatorHtml in script.js).
+   Meant to feel etched into the card frame itself: unlit diamonds sit
+   dark/sunken, lit ones glow in the card's own accent color. */
+.rank-indicator {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 0;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 217, 74, .35);
+  border-radius: 999px;
+  background: rgba(0,0,0,.25);
+}
+
+.rank-diamond {
+  width: clamp(4px, 1vw, 6px);
+  height: clamp(4px, 1vw, 6px);
+  transform: rotate(45deg);
+  border-radius: 1px;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.25);
+  box-shadow: inset 0 0 2px rgba(0,0,0,.6);
+}
+
+.rank-diamond.lit {
+  background: linear-gradient(135deg, #7fe0ff, #ffd94a);
+  border-color: #fff8dd;
+  box-shadow: 0 0 3px rgba(255, 217, 74, .95);
+}
+
+.card.fusion-card .rank-diamond.lit {
+  background: linear-gradient(135deg, #e79bff, #bd18ff);
+  box-shadow: 0 0 3px rgba(189, 24, 255, .95);
+}
+
+.card.fusion-card .rank-indicator {
+  border-color: rgba(189, 24, 255, .45);
 }
 
 .card.item h3 {
@@ -1258,21 +1414,18 @@ body {
   filter: drop-shadow(0 0 4px #000);
 }
 
-.level-badge {
+.poison-badge {
   position: absolute;
-  top: 50%;
-  left: 28px;
-  transform: translateY(-50%);
+  right: 2px;
+  bottom: 22%;
   z-index: 9;
-  padding: 1px 5px;
+  padding: 1px 3px;
+  border: 1px solid #030303;
   border-radius: 5px;
-  background: rgba(0,0,0,.78);
-  border: 1px solid #ffd94a;
-  color: #ffd94a;
-  font-size: clamp(8px, 1.7vw, 10px);
-  font-weight: 900;
-  text-shadow: 1px 1px 0 #000;
-  white-space: nowrap;
+  background: rgba(90, 20, 130, .88);
+  color: #d9a9ff;
+  font-size: clamp(9px, 1.5vw, 13px);
+  font-weight: bold;
 }
 
 .skill-row {
@@ -1286,6 +1439,7 @@ body {
 }
 
 .skill-slot {
+  position: relative;
   width: clamp(14px, 2.6vw, 22px);
   height: clamp(14px, 2.6vw, 22px);
   display: grid;
@@ -1294,6 +1448,33 @@ body {
   border-radius: 50%;
   background: rgba(0,0,0,.78);
   font-size: clamp(8px, 1.5vw, 13px);
+}
+
+/* Shows how strong the skill actually is for THIS card right now (its
+   own level baked in) — how much damage/heal/shield/etc it's really
+   worth, without needing to tap for the full tooltip every time. */
+.skill-value-badge {
+  position: absolute;
+  bottom: -3px;
+  left: -3px;
+  min-width: 11px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: #ffd94a;
+  color: #151515;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1.3;
+  text-align: center;
+  border: 1px solid #151515;
+}
+
+/* Fusion cards' skills get a subtle purple glow to set them apart —
+   purely visual, keyed off the existing .fusion-card class already on
+   the card element, no change to skill logic/behavior itself. */
+.card.fusion-card .skill-slot {
+  border-color: #bd18ff;
+  box-shadow: 0 0 4px rgba(189, 24, 255, .7);
 }
 
 .fusion-icon {
@@ -1389,7 +1570,7 @@ body {
   height: calc(var(--hand-height) - 22px);
 }
 
-.hand .card h3 {
+.hand .card-name-text {
   font-size: clamp(9px, 1.55vw, 13px);
 }
 
@@ -1422,6 +1603,19 @@ body {
   box-shadow: 0 0 14px #ba25ef;
   text-align: center;
   font-weight: bold;
+}
+
+.fusion-preview.locked {
+  border-color: #888;
+  box-shadow: 0 0 14px rgba(136,136,136,.6);
+}
+
+.fusion-preview.locked .fusion-preview-title {
+  color: #ccc;
+}
+
+.fusion-preview-locked-img {
+  filter: grayscale(1) brightness(.5);
 }
 
 .fusion-preview img {
@@ -1981,6 +2175,17 @@ body {
   color: #40ff70;
 }
 
+.skill-info-modal {
+  width: min(84vw, 300px);
+  text-align: center;
+}
+
+.skill-info-desc {
+  font-size: clamp(12px, 3vw, 14px);
+  color: #e0e0e0;
+  line-height: 1.5;
+}
+
 .upgrade-confirm-modal {
   width: min(90vw, 340px);
 }
@@ -2211,11 +2416,7 @@ body {
 .deck-builder-screen {
   display: flex;
   flex-direction: column;
-  background:
-    linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
-    url("home-background.jpg");
-  background-size: cover;
-  background-position: center;
+  /* Background now comes from the shared .sub-screen base rule. */
 }
 
 .db-stats-bar {
@@ -2359,8 +2560,16 @@ body {
   border-radius: 8px;
   background: rgba(0,0,0,.35);
   cursor: pointer;
-  touch-action: none;
+  /* pan-y (not none): lets native vertical scrolling of the panel keep
+     working when a touch starts on a tile — our own JS only calls
+     preventDefault once a gesture is confirmed to be a horizontal drag
+     (see dbHandleMove in ui.js), so scrolling and dragging can coexist. */
+  touch-action: pan-y;
   user-select: none;
+  -webkit-user-select: none;
+  /* Stops iOS's long-press "save/share image" callout from appearing
+     over a tile mid-drag, which is what made a long hold look glitchy. */
+  -webkit-touch-callout: none;
   animation: dbTileEnter .18s ease-out;
   transition: transform .1s ease, box-shadow .15s ease, border-color .15s ease;
 }
@@ -2380,6 +2589,9 @@ body {
   object-fit: cover;
   border-radius: 5px;
   box-shadow: 0 0 4px rgba(255, 217, 102, .25);
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .db-tile-name {
@@ -2394,16 +2606,14 @@ body {
   white-space: nowrap;
 }
 
-.db-tile-level {
+.db-tile-rank {
   position: absolute;
   top: 3px;
-  right: 3px;
-  padding: 1px 4px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.75);
-  color: #ffd94a;
-  font-size: 7px;
-  font-weight: 900;
+  left: 50%;
+  transform: translateX(-50%) scale(.6);
+  transform-origin: top center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .db-tile-stats {
@@ -2525,4 +2735,443 @@ body {
 
 .db-status-bar.warning {
   color: #ffcf4a;
+}
+
+/* ============================================================
+   RESEARCH LAB
+   Pure UI on top of progression.js's Fusion Research API.
+   ============================================================ */
+
+.research-lab-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.research-status-area {
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border-bottom: 2px solid rgba(189, 24, 255, .3);
+  background: rgba(0,0,0,.25);
+}
+
+.research-status-title {
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(13px, 3.2vw, 16px);
+  color: #ffd94a;
+}
+
+.research-flash-message {
+  text-align: center;
+  font-weight: bold;
+  font-size: clamp(11px, 2.8vw, 13px);
+  color: #ffcf4a;
+}
+
+.research-active-panel,
+.research-complete-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.research-active-title {
+  font-weight: 900;
+  font-size: clamp(12px, 3vw, 15px);
+  color: #e79bff;
+  text-shadow: 0 0 8px rgba(189, 24, 255, .6);
+}
+
+.research-complete-title {
+  font-weight: 900;
+  font-size: clamp(14px, 3.4vw, 18px);
+  color: #ffd94a;
+  text-shadow: 0 0 10px rgba(255, 217, 74, .7);
+  animation: researchCompletePulse 1s ease-in-out infinite;
+}
+
+@keyframes researchCompletePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.research-combo-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.research-mini-img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d4af37;
+}
+
+.research-plus {
+  font-weight: 900;
+  color: #ffd94a;
+  font-size: 14px;
+}
+
+.research-combo-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: clamp(11px, 2.8vw, 13px);
+}
+
+.research-confirm-modal {
+  width: min(84vw, 300px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.research-confirm-cost {
+  font-size: clamp(11px, 2.8vw, 13px);
+  color: #ffd94a;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.research-timer {
+  font-weight: 900;
+  font-size: clamp(18px, 4.4vw, 26px);
+  color: #ffd94a;
+  text-shadow: 0 0 10px rgba(255, 217, 74, .6);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.research-speedup-use-btn {
+  margin-top: 4px;
+  padding: 6px 16px;
+  border: 2px solid #bd18ff;
+  border-radius: 999px;
+  background: linear-gradient(#e79bff, #bd18ff);
+  color: #2a0033;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(11px, 2.8vw, 13px);
+  cursor: pointer;
+  box-shadow: 0 2px 0 #6a0090;
+}
+
+.research-speedup-use-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #6a0090;
+}
+
+.research-speedup-empty {
+  margin-top: 4px;
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: #999;
+}
+
+.research-speedup-stock {
+  margin-top: 4px;
+  text-align: center;
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: #e79bff;
+}
+
+.research-arrow {
+  font-size: 16px;
+  color: #e79bff;
+}
+
+.research-result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.research-result-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #ffd94a;
+  box-shadow: 0 0 10px rgba(255, 217, 74, .6);
+}
+
+.research-result-name {
+  font-weight: 900;
+  color: #ffd94a;
+  font-size: clamp(12px, 3vw, 14px);
+}
+
+.research-claim-btn {
+  margin-top: 4px;
+  padding: 8px 24px;
+  border: 2px solid #ffd94a;
+  border-radius: 999px;
+  background: linear-gradient(#ffe066, #ffb700);
+  color: #151515;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(12px, 3vw, 14px);
+  letter-spacing: .5px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #a86a00;
+}
+
+.research-claim-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #a86a00;
+}
+
+.research-list-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  padding: 8px 12px 20px;
+  align-content: start;
+}
+
+.research-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(0,0,0,.35);
+  text-align: center;
+}
+
+.research-tile.available {
+  border-color: #bd18ff;
+  box-shadow: 0 0 8px rgba(189, 24, 255, .35);
+}
+
+.research-tile.researched {
+  border-color: #2ecc71;
+  opacity: .9;
+}
+
+.research-tile.locked {
+  opacity: .55;
+  filter: grayscale(.6);
+  min-height: 90px;
+  justify-content: center;
+}
+
+.research-mystery-icon {
+  font-size: 22px;
+}
+
+.research-tile-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.research-tile-combo-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.research-tile-mini-img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid #d4af37;
+}
+
+.research-tile-plus {
+  font-weight: 900;
+  color: #ffd94a;
+  font-size: 11px;
+}
+
+.research-tile-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: clamp(10px, 2.4vw, 12px);
+}
+
+.research-tile-recipe {
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: #ccc;
+}
+
+.research-tile-status {
+  font-size: 9px;
+  font-weight: 900;
+  color: #999;
+}
+
+.research-tile-status.ready {
+  color: #e79bff;
+}
+
+.research-tile-status.done {
+  color: #40ff70;
+}
+
+.research-tile-cost {
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: #ffd94a;
+  font-weight: bold;
+}
+
+.research-tile-btn {
+  margin-top: 2px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #bd18ff;
+  border-radius: 6px;
+  background: rgba(189, 24, 255, .2);
+  color: #e79bff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(9px, 2.2vw, 11px);
+  cursor: pointer;
+}
+
+.research-tile-btn:active:not([disabled]) {
+  transform: scale(.95);
+}
+
+.research-tile-btn[disabled] {
+  opacity: .35;
+  border-color: #555;
+  color: #888;
+  background: rgba(255,255,255,.05);
+  cursor: default;
+}
+
+.research-claim-modal {
+  width: min(84vw, 300px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.research-claim-celebrate {
+  font-size: 32px;
+  animation: researchCompletePulse .8s ease-in-out infinite;
+}
+
+.research-claim-img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #ffd94a;
+  box-shadow: 0 0 14px rgba(255, 217, 74, .7);
+  margin: 4px 0;
+}
+
+.research-claim-hint {
+  font-size: clamp(11px, 2.8vw, 13px);
+  color: #ccc;
+}
+
+/* ============================================================
+   TUTORIAL (guided first battle) — see tutorial.js + script.js's
+   showTutorialOverlay/showTutorialSkillPopup/showTutorialInstructionBanner.
+   ============================================================ */
+
+.tutorial-instruction-banner {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: linear-gradient(90deg, #2a2008, #14100290, #2a2008);
+  border-bottom: 2px solid #ffd94a;
+  box-shadow: 0 2px 10px rgba(255, 217, 74, .3);
+}
+
+.tutorial-instruction-text {
+  color: #ffe066;
+  font-weight: 900;
+  font-size: clamp(11px, 2.8vw, 14px);
+  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
+  animation: tutorialTextPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tutorialTextPulse {
+  0%, 100% { opacity: .85; }
+  50% { opacity: 1; }
+}
+
+.tutorial-skip-link {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: #7f9c96;
+  font-family: inherit;
+  font-size: clamp(9px, 2.2vw, 11px);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tutorial-overlay-modal {
+  width: min(88vw, 340px);
+  text-align: center;
+}
+
+.tutorial-overlay-text {
+  font-size: clamp(12px, 3vw, 14px);
+  color: #e0e0e0;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.tutorial-skip-btn {
+  background: rgba(255,255,255,.1);
+  color: #ccc;
+}
+
+/* Hand cards NOT allowed during a restricted tutorial step — dimmed AND
+   functionally locked (draggable=false, pointer handlers bail early —
+   see renderHand), this is just the matching visual. */
+.card.tutorial-dimmed {
+  opacity: .3;
+  filter: grayscale(.6);
+  pointer-events: none;
+}
+
+/* The one card/slot the current tutorial step actually wants — a gold
+   pulsing glow, same visual language as the merge-candidate/db-selected
+   highlights used elsewhere in the app. */
+.card.tutorial-highlight {
+  animation: tutorialHighlightPulse 1.1s ease-in-out infinite;
+  z-index: 5;
+}
+
+.slot.tutorial-highlight {
+  animation: tutorialHighlightPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes tutorialHighlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 217, 74, .6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 217, 74, 1);
+    transform: scale(1.04);
+  }
 }

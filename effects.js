@@ -50,6 +50,10 @@ window.GameEffects = (() => {
       lines.push(`<div class="game-end-reward-line">💰 +${rewards.granted.coins} מטבעות</div>`);
     }
 
+    if (rewards.granted.researchPoints > 0) {
+      lines.push(`<div class="game-end-reward-line">🧬 +${rewards.granted.researchPoints} נקודות מחקר</div>`);
+    }
+
     rewards.granted.items.forEach(item => {
       lines.push(`<div class="game-end-reward-line">🎁 פריט חדש נפתח: ${item}</div>`);
     });

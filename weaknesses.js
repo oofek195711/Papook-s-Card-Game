@@ -12,21 +12,12 @@ window.WeaknessEngine = (() => {
     registry.set(effectType, resolver);
   }
 
-  function randomOccupiedSlot(board) {
-    const occupied = [];
-    board.forEach((card, index) => { if (card) occupied.push(index); });
-    if (!occupied.length) return null;
-    return occupied[Math.floor(Math.random() * occupied.length)];
-  }
-
   // Called right after ANY card is placed or fused — for the player AND
   // the AI — before the skills phase starts, exactly once. Fires only if
   // the card DIRECTLY FACING the one that was just placed (same lane,
-  // opposing board) has a weakness matching the item involved — but the
-  // EFFECT itself then lands on a random card somewhere on the opponent's
-  // board, not necessarily the one that "has" the weakness. Placement
-  // still has to be in the right lane for it to trigger at all; where the
-  // hit actually lands afterward is the random part.
+  // opposing board) has a weakness matching the item involved — and the
+  // effect lands directly on THAT card (the one with the weakness), not
+  // a random card elsewhere on the board.
   //
   // "The item that was involved" is `placedCard.item` if this was a
   // Fusion (every fused card carries the item's name in `.item`, even a
@@ -55,34 +46,32 @@ window.WeaknessEngine = (() => {
     if (isGameOver()) return;
   }
 
+  // Both effects now hit the card that ACTUALLY has the weakness,
+  // directly — not a random card somewhere on the board. slotIndex is
+  // exactly where facingCard sits (see checkTrigger: facingCard =
+  // defenderBoard[slotIndex]), so it's the correct target already,
+  // no need to pick one.
   register("damage", async ctx => {
-    const { facingCard, weakness, defenderOwner, defenderBoard, effects, render, log, damageCard, sound } = ctx;
+    const { facingCard, weakness, defenderOwner, defenderBoard, slotIndex, effects, render, log, damageCard, sound } = ctx;
 
-    const targetIndex = randomOccupiedSlot(defenderBoard);
-    if (targetIndex === null) return;
-    const targetCard = defenderBoard[targetIndex];
-
-    log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! הפגיעה פוגעת ב-${targetCard.name}.`);
-    effects.showSkillBadge(defenderOwner, targetIndex, "⚠️", "חולשה!");
+    log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! הפגיעה פוגעת בו ישירות.`);
+    effects.showSkillBadge(defenderOwner, slotIndex, "⚠️", "חולשה!");
     sound?.playSkill();
     render();
     await effects.wait(400);
 
     // isSkillDamage=true so damageCard doesn't also play the combat
     // "Hit" sound — the weakness chime above already covers it.
-    await damageCard(defenderBoard, targetIndex, weakness.value, weakness.item, true);
+    await damageCard(defenderBoard, slotIndex, weakness.value, weakness.item, true);
   });
 
   register("stun", async ctx => {
-    const { facingCard, weakness, defenderOwner, defenderBoard, effects, render, log, sound } = ctx;
+    const { facingCard, weakness, defenderOwner, defenderBoard, slotIndex, effects, render, log, sound } = ctx;
 
-    const targetIndex = randomOccupiedSlot(defenderBoard);
-    if (targetIndex === null) return;
-    const targetCard = defenderBoard[targetIndex];
-    targetCard.stunned = true;
+    facingCard.stunned = true;
 
-    log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! ${targetCard.name} מסונוור.`);
-    effects.showSkillBadge(defenderOwner, targetIndex, "😵", "חולשה!");
+    log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! הוא מסונוור.`);
+    effects.showSkillBadge(defenderOwner, slotIndex, "😵", "חולשה!");
     sound?.playSkill();
     render();
     await effects.wait(400);

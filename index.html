@@ -27,7 +27,10 @@
     <span>↻</span>
   </div>
 
-  <button type="button" id="coinsDisplay" class="coins-display hidden">💰 <span id="coinsAmount">0</span> <span class="coins-shop-hint">🛒</span></button>
+  <button type="button" id="coinsDisplay" class="coins-display hidden">
+    💰 <span id="coinsAmount">0</span>
+    <span class="coins-shop-hint"><span class="coins-shop-icon">🛒</span><span class="coins-shop-label">חנות</span></span>
+  </button>
 
   <section id="homeScreen" class="home-screen">
     <h1 class="home-title"><img src="icon-192.png" class="home-title-icon" alt="Papook"> Papook</h1>
@@ -35,8 +38,10 @@
     <button type="button" id="goCampaignBtn" class="home-btn campaign">🗺️ CAMPAIGN</button>
     <button type="button" id="goCollectionBtn" class="home-btn secondary">🃏 COLLECTION</button>
     <button type="button" id="goDeckBtn" class="home-btn secondary">🎴 MY DECK</button>
+    <button type="button" id="goResearchLabBtn" class="home-btn research">🔬 RESEARCH LAB</button>
     <button type="button" id="goHowToPlayBtn" class="home-btn howto">❓ HOW TO PLAY</button>
     <button type="button" id="resetProgressBtn" class="home-reset-link">🔄 איפוס התקדמות (Dev)</button>
+    <div class="home-version-tag">v77</div>
   </section>
 
   <section id="campaignWorldScreen" class="sub-screen hidden">
@@ -110,6 +115,7 @@
   <section id="howToPlayScreen" class="sub-screen hidden">
     <header class="sub-header">
       <button type="button" id="howToPlayBackBtn" class="back-btn">→ בית</button>
+      <button type="button" id="replayTutorialBtn" class="deck-count-badge replay-tutorial-btn">🎓 הפעל את המדריך</button>
       <h2>איך משחקים</h2>
     </header>
 
@@ -132,6 +138,17 @@
     <div id="shopGrid" class="collection-grid"></div>
   </section>
 
+  <section id="researchLabScreen" class="sub-screen research-lab-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="researchLabBackBtn" class="back-btn">→ בית</button>
+      <div id="researchPointsBadge" class="deck-count-badge">🧬 0</div>
+      <h2>מעבדת השילובים</h2>
+    </header>
+
+    <div id="researchStatusArea" class="research-status-area"></div>
+    <div id="researchListArea" class="research-list-area"></div>
+  </section>
+
   <main class="game hidden" id="battleScreen">
     <header class="top-bar">
       <div class="turn-pill">תור: <span id="turnText">שחקן</span></div>
@@ -141,6 +158,11 @@
       <button type="button" id="muteButton" class="mute-button">🔊</button>
       <button type="button" id="exitBattleBtn" class="exit-battle-button">🚪</button>
     </header>
+
+    <div id="tutorialInstructionBanner" class="tutorial-instruction-banner hidden">
+      <span class="tutorial-instruction-text"></span>
+      <button type="button" id="tutorialSkipLink" class="tutorial-skip-link">דלג על המדריך</button>
+    </div>
 
     <section class="battle-area">
       <div class="battle-row ai-row">
@@ -201,6 +223,7 @@
   <script src="skills.js"></script>
   <script src="weaknesses.js"></script>
   <script src="ai.js"></script>
+  <script src="tutorial.js"></script>
   <script src="script.js"></script>
   <script src="campaign.js"></script>
   <script src="ui.js"></script>

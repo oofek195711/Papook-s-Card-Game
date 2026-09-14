@@ -35,7 +35,49 @@ window.Progression = (() => {
       // (everything owned, by default) the first time anything actually
       // asks for the deck — see below.
       deck: null,
-      stageProgress: {}    // stageId -> { completed: true, stars: 1-3 }
+      stageProgress: {},   // stageId -> { completed: true, stars: 1-3 }
+
+      // --- Fusion Research ---
+      // A SEPARATE currency from coins — coins still only ever pay for
+      // the existing merge-upgrade system. Research Points exist purely
+      // to unlock the ABILITY to perform a specific named Fusion combo
+      // in battle at all (owning the character+item is no longer
+      // enough by itself). Starting amount is generous for testing —
+      // no real source grants these yet (see addResearchPoints).
+      researchPoints: 500,
+      // Combo keys ("CharacterName|ItemName") the player has actually
+      // claimed research for — see combos.js for where researchCost/
+      // researchTime live on each combo definition (not duplicated
+      // here). A combo with no entry in combos.js at all (a "generic
+      // upgrade" pairing) was never gated by Research in the first
+      // place and doesn't need to appear here.
+      researchedFusions: [],
+      // A stockpile of "shave 10 minutes off the active research"
+      // charges, bought from the Shop — see buySpeedupCharge/
+      // useSpeedupCharge. Buying and using are separate: buying a
+      // charge doesn't touch any research, it just adds to this count;
+      // using one is a deliberate, per-charge choice made from the
+      // Research Lab screen.
+      researchSpeedupCharges: 0,
+      // Single research slot: { comboKey, startedAt, finishAt } (both
+      // real epoch milliseconds) or null when idle. Deliberately NOT
+      // storing a "remaining seconds" countdown — that would need to
+      // keep ticking down even while the game is closed, which a plain
+      // stored number can't do. Timestamps let getResearchStatus()
+      // always compute the true remaining time from Date.now(),
+      // whether the player checked back in 2 minutes or 2 days.
+      activeResearch: null,
+      // Whether the player has finished (or explicitly skipped) the
+      // guided first-battle tutorial — see tutorial.js. A fresh save
+      // hasn't, so the very first tap on PLAY launches the tutorial
+      // battle instead of a normal one.
+      hasSeenTutorial: false,
+      // First-visit explainer per SCREEN (Deck Builder, Research Lab,
+      // Collection, Shop, Campaign, ...) — { screenId: true } once
+      // shown. Separate from hasSeenTutorial (that's specifically the
+      // guided BATTLE) and from each other (visiting Deck Builder for
+      // the first time doesn't mark Research Lab's own intro as seen).
+      seenScreenIntros: {}
     };
   }
 
@@ -70,6 +112,30 @@ window.Progression = (() => {
         });
       }
 
+      // Fusion Research migration: old saves have no researchedFusions
+      // field at all. Grandfather in anything the player could ALREADY
+      // perform before this system existed — any named combo whose
+      // item they already own — so nobody has to re-research something
+      // they'd effectively already unlocked.
+      let researchedFusions = Array.isArray(parsed.researchedFusions)
+        ? parsed.researchedFusions
+        : null;
+
+      if (!researchedFusions) {
+        researchedFusions = [];
+        const comboDefs = window.CardData?.combos || {};
+        Object.keys(comboDefs).forEach(comboKey => {
+          const itemName = comboKey.split("|")[1];
+          if (itemCounts[itemName] > 0) researchedFusions.push(comboKey);
+        });
+      }
+
+      const activeResearch = parsed.activeResearch
+        && typeof parsed.activeResearch.comboKey === "string"
+        && typeof parsed.activeResearch.finishAt === "number"
+        ? parsed.activeResearch
+        : null;
+
       return {
         coins: parsed.coins || 0,
         itemCounts,
@@ -77,7 +143,28 @@ window.Progression = (() => {
           ? parsed.ownedInstances
           : seedStarterInstances(),
         deck: parsed.deck && Array.isArray(parsed.deck.instanceIds) ? parsed.deck : null,
-        stageProgress: parsed.stageProgress || {}
+        stageProgress: parsed.stageProgress || {},
+        researchPoints: typeof parsed.researchPoints === "number" ? parsed.researchPoints : 500,
+        researchedFusions,
+        researchSpeedupCharges: typeof parsed.researchSpeedupCharges === "number"
+          ? parsed.researchSpeedupCharges
+          : 0,
+        activeResearch,
+        // Migration default is TRUE (already seen), not false — anyone
+        // loading an old save already has real progress and clearly
+        // knows how to play; only a genuinely brand-new save (no
+        // localStorage at all, using getDefaultState() instead of this
+        // migration path) should default to false and get the guided
+        // tutorial.
+        hasSeenTutorial: typeof parsed.hasSeenTutorial === "boolean" ? parsed.hasSeenTutorial : true,
+        // Unlike hasSeenTutorial, this one just defaults to empty for
+        // EVERYONE (including migrated saves) — these are low-stakes,
+        // purely informational, dismiss-and-forget popups, not a gate,
+        // so there's no harm (and maybe even a nice reminder) in a
+        // returning player seeing them once too.
+        seenScreenIntros: parsed.seenScreenIntros && typeof parsed.seenScreenIntros === "object"
+          ? parsed.seenScreenIntros
+          : {}
       };
     } catch (err) {
       console.warn("Progression: failed to load save, starting fresh.", err);
@@ -142,6 +229,181 @@ window.Progression = (() => {
     return { success: true, cost: SHOP_ITEM_PRICE };
   }
 
+  // --- Fusion Research ---
+  // A SEPARATE currency (researchPoints) from coins, and a separate
+  // "researched or not" flag PER NAMED COMBO — owning the character and
+  // item is no longer enough on its own to actually perform that combo
+  // in battle (see script.js's playCardOnSlot for the battle-side gate).
+  // Only ONE research slot for now (state.activeResearch is a single
+  // object, not an array) — adding a second slot later just means
+  // turning that into an array and teaching a couple of these functions
+  // to loop over it; nothing else here needs to change shape for that.
+
+  function getResearchPoints() {
+    return state.researchPoints;
+  }
+
+  // No real source grants these yet — this is the one deliberately
+  // "unwired" hook the spec asked for, ready for Stages/Bosses/Missions
+  // to call later without touching anything else in this module.
+  function addResearchPoints(amount) {
+    state.researchPoints += amount;
+    persist();
+    return state.researchPoints;
+  }
+
+  function isFusionResearched(comboKey) {
+    return state.researchedFusions.includes(comboKey);
+  }
+
+  function getActiveResearch() {
+    return state.activeResearch;
+  }
+
+  function getComboDef(comboKey) {
+    return (window.CardData?.combos || {})[comboKey] || null;
+  }
+
+  // "idle" (nothing running) | "researching" (timer still counting
+  // down) | "ready" (timer done, waiting on claimResearch()). Always
+  // computed fresh from Date.now() vs the stored finishAt timestamp —
+  // never from a ticking-down counter, so it's correct even after the
+  // game was closed for hours.
+  function getResearchStatus() {
+    if (!state.activeResearch) return "idle";
+    return Date.now() >= state.activeResearch.finishAt ? "ready" : "researching";
+  }
+
+  function ownsComboRequirements(comboKey) {
+    const combo = getComboDef(comboKey);
+    if (!combo) return false;
+
+    const [characterName, itemName] = comboKey.split("|");
+    const ownsCharacter = state.ownedInstances.some(i => i.cardName === characterName);
+    const ownsItem = getOwnedItemCount(itemName) > 0;
+
+    return ownsCharacter && ownsItem;
+  }
+
+  // Doesn't just return true/false — the UI needs to explain WHY a
+  // research can't start (missing character, missing item, not enough
+  // points, a slot already busy, or already researched), so this
+  // returns a reason code instead of throwing/guessing.
+  function canStartResearch(comboKey) {
+    const combo = getComboDef(comboKey);
+    if (!combo) return { canStart: false, reason: "no-combo" };
+    if (isFusionResearched(comboKey)) return { canStart: false, reason: "already-researched" };
+    if (state.activeResearch) return { canStart: false, reason: "slot-busy" };
+    if (!ownsComboRequirements(comboKey)) return { canStart: false, reason: "missing-requirements" };
+
+    const cost = combo.researchCost ?? 0;
+    if (state.researchPoints < cost) return { canStart: false, reason: "points", cost };
+
+    return { canStart: true };
+  }
+
+  function startResearch(comboKey) {
+    const check = canStartResearch(comboKey);
+    if (!check.canStart) return { success: false, reason: check.reason, cost: check.cost };
+
+    const combo = getComboDef(comboKey);
+    const cost = combo.researchCost ?? 0;
+    const durationMs = combo.researchTime ?? 0;
+
+    state.researchPoints -= cost;
+    state.activeResearch = {
+      comboKey,
+      startedAt: Date.now(),
+      finishAt: Date.now() + durationMs
+    };
+
+    persist();
+    return { success: true };
+  }
+
+  // Only actually unlocks the Fusion once the player explicitly claims
+  // it (never silently in the background) — matches the "🎉 RESEARCH
+  // COMPLETE" / "CLAIM FUSION" flow in the Research Lab screen.
+  function claimResearch() {
+    if (getResearchStatus() !== "ready") {
+      return { success: false, reason: "not-ready" };
+    }
+
+    const comboKey = state.activeResearch.comboKey;
+    state.researchedFusions.push(comboKey);
+    state.activeResearch = null;
+
+    persist();
+    return { success: true, comboKey };
+  }
+
+  // Shop item: pay coins to shave time off the CURRENTLY active
+  // research. Each purchase is a flat, small chunk — never enough to
+  // trivialize research on its own, just a convenience for someone who
+  // wants to shorten a wait a bit. Buying and USING are two separate
+  // steps now: buying just adds to a stockpile of charges (no active
+  // research required), and each charge is applied to the currently
+  // active research explicitly, one at a time, whenever the player
+  // actually wants to spend one.
+  const RESEARCH_SPEEDUP_MINUTES = 10;
+  const RESEARCH_SPEEDUP_PRICE = 15;
+
+  function getResearchSpeedupCharges() {
+    return state.researchSpeedupCharges;
+  }
+
+  function buySpeedupCharge() {
+    if (state.coins < RESEARCH_SPEEDUP_PRICE) {
+      return { success: false, reason: "coins", cost: RESEARCH_SPEEDUP_PRICE };
+    }
+
+    state.coins -= RESEARCH_SPEEDUP_PRICE;
+    state.researchSpeedupCharges += 1;
+
+    persist();
+    return { success: true, cost: RESEARCH_SPEEDUP_PRICE, charges: state.researchSpeedupCharges };
+  }
+
+  function useSpeedupCharge() {
+    if (state.researchSpeedupCharges <= 0) {
+      return { success: false, reason: "no-charges" };
+    }
+
+    if (getResearchStatus() !== "researching") {
+      return { success: false, reason: "no-active-research" };
+    }
+
+    state.researchSpeedupCharges -= 1;
+    state.activeResearch.finishAt -= RESEARCH_SPEEDUP_MINUTES * 60 * 1000;
+
+    persist();
+    return {
+      success: true,
+      minutesSaved: RESEARCH_SPEEDUP_MINUTES,
+      chargesLeft: state.researchSpeedupCharges
+    };
+  }
+
+  // --- Tutorial ---
+  function shouldShowTutorial() {
+    return !state.hasSeenTutorial;
+  }
+
+  function markTutorialSeen() {
+    state.hasSeenTutorial = true;
+    persist();
+  }
+
+  // --- Screen intros (first-visit "what is this screen for" popups) ---
+  function hasSeenScreenIntro(screenId) {
+    return !!state.seenScreenIntros[screenId];
+  }
+
+  function markScreenIntroSeen(screenId) {
+    state.seenScreenIntros[screenId] = true;
+    persist();
+  }
+
   // --- Card instances & merge-upgrades ---
   const MAX_CARD_LEVEL = 5;
   // HP bonus was 5 before the Animation-Throwdown-style rebalance
@@ -203,18 +465,21 @@ window.Progression = (() => {
     state.ownedInstances.push(merged);
 
     // Keep the deck selection consistent: the two consumed instances
-    // can't stay "in the deck" (they don't exist anymore). If BOTH of
-    // them were actually in the deck, swap them for the new merged
-    // instance so the deck doesn't silently shrink from under you.
+    // can't stay "in the deck" (they don't exist anymore). If EITHER of
+    // them was in the deck, the merged result takes its place — so
+    // merging a card that's actually equipped never silently drops it
+    // from the deck. (Net character count can only go DOWN by one here
+    // — two consumed, one created — so this can never push the deck
+    // over MAX_DECK_CHARACTERS.)
     if (state.deck) {
-      const hadBoth = state.deck.instanceIds.includes(instanceIdA)
-        && state.deck.instanceIds.includes(instanceIdB);
+      const hadEither = state.deck.instanceIds.includes(instanceIdA)
+        || state.deck.instanceIds.includes(instanceIdB);
 
       state.deck.instanceIds = state.deck.instanceIds.filter(
         id => id !== instanceIdA && id !== instanceIdB
       );
 
-      if (hadBoth) state.deck.instanceIds.push(merged.instanceId);
+      if (hadEither) state.deck.instanceIds.push(merged.instanceId);
     }
 
     persist();
@@ -378,7 +643,7 @@ window.Progression = (() => {
   }
 
   function grantRewards(rewards = []) {
-    const granted = { coins: 0, items: [], characterCopies: [] };
+    const granted = { coins: 0, items: [], characterCopies: [], researchPoints: 0 };
 
     rewards.forEach(reward => {
       if (reward.type === "coins") {
@@ -390,6 +655,9 @@ window.Progression = (() => {
       } else if (reward.type === "characterCopy") {
         grantCharacterCopy(reward.character);
         granted.characterCopies.push(reward.character);
+      } else if (reward.type === "researchPoints") {
+        addResearchPoints(reward.amount);
+        granted.researchPoints += reward.amount;
       }
     });
 
@@ -430,6 +698,17 @@ window.Progression = (() => {
   function rollQuickBattleReward(config) {
     const coins = Math.floor(config.coinsMin + Math.random() * (config.coinsMax - config.coinsMin + 1));
     const rewards = [{ type: "coins", amount: coins }];
+
+    // Research Points from Quick Battle wins — the ONLY real source of
+    // these right now (the starting 500 was always just a testing
+    // default, with nothing else topping it up). Always granted (like
+    // coins), not a chance roll like the item/characterCopy bonus below.
+    if (config.researchMin !== undefined && config.researchMax !== undefined) {
+      const researchPoints = Math.floor(
+        config.researchMin + Math.random() * (config.researchMax - config.researchMin + 1)
+      );
+      rewards.push({ type: "researchPoints", amount: researchPoints });
+    }
 
     if (Math.random() < config.bonusChance) {
       if (config.bonusType === "item") {
@@ -500,6 +779,23 @@ window.Progression = (() => {
     isWorldCompleted,
     isItemUnlocked,
     buyItem,
+    getResearchPoints,
+    addResearchPoints,
+    isFusionResearched,
+    getActiveResearch,
+    getResearchStatus,
+    canStartResearch,
+    startResearch,
+    claimResearch,
+    getResearchSpeedupCharges,
+    buySpeedupCharge,
+    useSpeedupCharge,
+    shouldShowTutorial,
+    markTutorialSeen,
+    hasSeenScreenIntro,
+    markScreenIntroSeen,
+    RESEARCH_SPEEDUP_MINUTES,
+    RESEARCH_SPEEDUP_PRICE,
     SHOP_ITEM_PRICE,
     getOwnedItemCount,
     getInstance,

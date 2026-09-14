@@ -27,6 +27,16 @@ let draggedCardIndex = null;
 // Which campaign stage (if any) this battle belongs to. null = a normal
 // "quick battle" from the Home screen's PLAY button. Set by startGame().
 let currentBattleConfig = null;
+// Set by the tutorial's onComplete callback (see startGame's
+// Tutorial.start wiring) — NOT acted on immediately, since onComplete
+// can fire from deep inside an in-progress playCardOnSlot() call's own
+// await chain (Segment 2's final fuse action -> skill popup -> finish,
+// all still within that SAME call). Actually starting a new battle
+// right then (which resetBattleState()s everything) would corrupt the
+// STILL-RUNNING original call's own slot/board references. Instead,
+// this just gets checked once, at the natural end of that turn's full
+// processing — see the check at the end of resolveAfterPlayerAction.
+let tutorialCompletionPending = false;
 
 // Touch drag state
 let mobileDragGhost = null;
@@ -149,8 +159,26 @@ function findCardDefinitionByName(name) {
   const base = cards.find(c => c.name === name);
   if (base) return { ...base };
 
-  const comboResult = Object.values(combos).find(c => c.name === name);
-  if (comboResult) return { ...comboResult, type: "character", isFusion: true };
+  const comboEntry = Object.entries(combos).find(([, c]) => c.name === name);
+  if (comboEntry) {
+    const [comboKey, comboResult] = comboEntry;
+    const characterName = comboKey.split("|")[0];
+    const sourceCharacter = cards.find(c => c.name === characterName);
+
+    return {
+      ...comboResult,
+      type: "character",
+      isFusion: true,
+      // Combo definitions in combos.js never carry a .weaknesses array
+      // of their own (only fuseCards' runtime logic adds that, when a
+      // PLAYER actually fuses mid-battle) — a boss placed directly via
+      // its named combo (see placeBossCard) needs the exact same
+      // inheritance applied here. Without this, a boss's weakness
+      // (e.g. עומר → קטשופ) would silently never trigger, since its
+      // board card had no weaknesses recorded on it at all.
+      weaknesses: sourceCharacter?.weaknesses || []
+    };
+  }
 
   return null;
 }
@@ -182,6 +210,10 @@ function placeBossCard(cardName, slotIndex, enemyLevel) {
     boardCard.atk = leveled.atk;
     boardCard.hp = leveled.hp;
     boardCard.maxHp = leveled.hp;
+    // Same level badge a player's own leveled character gets — makes it
+    // visually obvious a scaled-up boss is actually stronger than usual,
+    // not just a number you'd have to notice by comparing stats.
+    boardCard.level = enemyLevel;
   }
 
   aiBoard[slotIndex] = boardCard;
@@ -200,6 +232,8 @@ function applyEnemyLevelToPool(cardPool, enemyLevel) {
       const stats = window.Progression.getStatsAtLevel(leveled.atk || 0, leveled.hp || 0, enemyLevel);
       leveled.atk = stats.atk;
       leveled.hp = stats.hp;
+      // Same level badge treatment as placeBossCard — see there for why.
+      leveled.level = enemyLevel;
     } else {
       const stats = window.Progression.getStatsAtLevel(leveled.atkBonus || 0, leveled.hpBonus || 0, enemyLevel);
       leveled.atkBonus = stats.atk;
@@ -231,17 +265,29 @@ function startGame(battleConfig = null) {
   currentBattleConfig = battleConfig;
   applyBattleBackground(battleConfig?.background);
 
-  const enemyPool = battleConfig?.enemyCards
-    ? cards.filter(c => battleConfig.enemyCards.includes(c.name))
-    : cards;
+  if (battleConfig?.isTutorial) {
+    // Fixed, unshuffled deck. The single AI card is FORCE-PLACED (same
+    // placeBossCard() mechanism campaign bosses already use) rather
+    // than left to the AI's own move-picking logic — that logic isn't
+    // scripted and could land the card in an unpredictable slot, which
+    // would break the deterministic Weakness demo. After the scripted
+    // steps finish, the tutorial just steps out of the way and the
+    // battle continues completely normally.
+    playerDeck = buildTutorialPlayerDeck();
+    aiDeck = [];
+  } else {
+    const enemyPool = battleConfig?.enemyCards
+      ? cards.filter(c => battleConfig.enemyCards.includes(c.name))
+      : cards;
 
-  const leveledEnemyPool = applyEnemyLevelToPool(
-    enemyPool.length ? enemyPool : cards,
-    battleConfig?.enemyLevel
-  );
+    const leveledEnemyPool = applyEnemyLevelToPool(
+      enemyPool.length ? enemyPool : cards,
+      battleConfig?.enemyLevel
+    );
 
-  playerDeck = createPlayerDeck();
-  aiDeck = createEnemyDeck(leveledEnemyPool);
+    playerDeck = createPlayerDeck();
+    aiDeck = createEnemyDeck(leveledEnemyPool);
+  }
 
   for (let i = 0; i < 4; i++) {
     drawCard("player");
@@ -252,6 +298,23 @@ function startGame(battleConfig = null) {
     battleConfig.enemyStartingBoard.forEach(entry => {
       placeBossCard(entry.cardName, entry.slot, battleConfig.enemyLevel);
     });
+  }
+
+  if (battleConfig?.isTutorial) {
+    // Force-placed (same mechanism campaign bosses use) so its slot is
+    // 100% predictable — directly facing where the player is about to
+    // be told to place their own card. Stats overridden right after
+    // placement to Segment 1's own numbers (see tutorial.js).
+    const aiSlot = window.Tutorial.getSegment1Slot();
+    placeBossCard(window.Tutorial.getAiCharacter(), aiSlot, 1);
+
+    const aiStats = window.Tutorial.getSegment1AiStats();
+    const aiCard = aiBoard[aiSlot];
+    if (aiCard) {
+      aiCard.atk = aiStats.atk;
+      aiCard.hp = aiStats.hp;
+      aiCard.maxHp = aiStats.hp;
+    }
   }
 
   render();
@@ -265,6 +328,56 @@ function startGame(battleConfig = null) {
       render();
     });
   }
+
+  if (battleConfig?.isTutorial) {
+    window.Tutorial.start({
+      showOverlay: (step, onContinue) => showTutorialOverlay(step, onContinue),
+      showInstruction: text => showTutorialInstructionBanner(text),
+      refreshRestriction: () => render(),
+      onFinish: () => hideTutorialInstructionBanner(),
+      // Fires once, when the tutorial ENTIRELY finishes (both segments
+      // done) — not the same moment as onFinish, which also fires
+      // between segments (Segment 1's own step-chain ending) whenever
+      // there's no more scripted step to show right now. Deliberately
+      // just sets a flag here rather than acting immediately — see the
+      // big comment on tutorialCompletionPending above for why.
+      onComplete: () => { tutorialCompletionPending = true; }
+    });
+  }
+}
+
+// Builds the tutorial's fixed, deterministic starting deck directly
+// from base card definitions (level 1) — deliberately NOT going through
+// the player's real owned instances/Deck Builder selection, so the
+// tutorial works identically no matter what the player actually owns
+// (including a genuinely fresh save with nothing customized yet).
+function buildTutorialPlayerDeck() {
+  const names = window.Tutorial.buildTutorialDeckNames();
+  const segment1Stats = window.Tutorial.getSegment1CharacterStats();
+
+  // buildTutorialDeckNames() lists names in DRAW order (first entry
+  // drawn first); drawCard() pops from the END of the deck array, so
+  // reverse here to match.
+  return names.slice().reverse().map(name => {
+    const base = cards.find(c => c.name === name);
+    if (!base) return null;
+    const card = structuredClone(base);
+
+    if (card.type === "character") {
+      card.level = 1;
+
+      // Only Segment 1's own character gets its stats overridden to
+      // deliberately weak numbers — Segment 2's character (תמר) keeps
+      // her real cards.js stats, since that segment is about
+      // demonstrating a Fusion SKILL, not a precisely-tuned kill.
+      if (base.name === window.Tutorial.getSegment1Character()) {
+        card.atk = segment1Stats.atk;
+        card.hp = segment1Stats.hp;
+      }
+    }
+
+    return card;
+  }).filter(Boolean);
 }
 
 function render() {
@@ -300,14 +413,26 @@ function renderHand() {
   const handDiv = document.getElementById("playerHand");
   handDiv.innerHTML = "";
 
+  const tutorialStep = window.Tutorial?.isActive() ? window.Tutorial.currentStep() : null;
+  const isRestrictedStep = tutorialStep?.type === "action";
+
   playerHand.forEach((card, index) => {
     const div = document.createElement("div");
     div.className = `card ${card.type}`;
-    div.draggable = turn === "player" && !actionLocked && !gameEnded;
+
+    // During a restricted tutorial step, only the ONE expected card can
+    // be picked up at all — everything else is both visually dimmed AND
+    // functionally locked (not just styled to LOOK disabled), so the
+    // player genuinely can't do anything except the scripted action.
+    const isTutorialAllowed = !isRestrictedStep || card.name === tutorialStep.allowedCardName;
+    div.classList.toggle("tutorial-dimmed", isRestrictedStep && !isTutorialAllowed);
+    div.classList.toggle("tutorial-highlight", isRestrictedStep && isTutorialAllowed);
+
+    div.draggable = turn === "player" && !actionLocked && !gameEnded && isTutorialAllowed;
     div.innerHTML = getCardHtml(card);
 
     div.ondragstart = () => {
-      if (turn !== "player" || actionLocked || gameEnded) return;
+      if (turn !== "player" || actionLocked || gameEnded || !isTutorialAllowed) return;
 
       draggedCardIndex = index;
       setHandDragging(true);
@@ -325,7 +450,7 @@ function renderHand() {
 
     div.onpointerdown = event => {
       if (event.pointerType === "mouse") return;
-      if (turn !== "player" || actionLocked || gameEnded) return;
+      if (turn !== "player" || actionLocked || gameEnded || !isTutorialAllowed) return;
 
       startMobileCardDrag(event, div, index, card);
     };
@@ -466,6 +591,18 @@ function renderBoard(owner) {
     slot.dataset.index = index;
     slot.dataset.slot = index + 1;
 
+    // Nudges the eye toward the one slot the current tutorial step
+    // actually wants — every action step now specifies its own target
+    // slot directly (requiredSlotIndex), whether that's where the
+    // character needs to be fused, or the empty slot facing the AI's
+    // card for the Weakness demo.
+    if (owner === "player" && window.Tutorial?.isActive()) {
+      const step = window.Tutorial.currentStep();
+      if (step?.type === "action" && step.requiredSlotIndex === index) {
+        slot.classList.add("tutorial-highlight");
+      }
+    }
+
     if (card) {
       const cardDiv = document.createElement("div");
       cardDiv.className = `card ${card.type} ${card.isFusion ? "fusion-card" : ""}`;
@@ -510,23 +647,29 @@ function renderBoard(owner) {
 
 function getCardHtml(card) {
   const buff = card.tempAttackBonus || 0;
-  // Mirrors createBoardCard's exact fallback math, so an item's hand
-  // preview honestly matches what it becomes if placed standalone.
-  // NOTE: createBoardCard's hp fallback is a flat 12 — it does NOT fall
-  // back through hpBonus (hpBonus only ever matters during Fusion, added
-  // to a character's current hp). Using hpBonus as a fallback here would
-  // leak a literal negative number into the preview for items like
-  // דגדוגים that now have a negative hpBonus (see cards.js) — so this
-  // stays a flat 12, matching reality exactly.
-  const atkValue = (card.atk ?? Math.max(1, card.atkBonus || 1)) + buff;
-  const hpValue = card.hp ?? 12;
+  // Mirrors createBoardCard's exact fallback math (see there for why
+  // items now scale off their own bonus values instead of a flat
+  // 12hp/1atk floor), so the hand preview honestly matches what a card
+  // becomes if placed standalone.
+  const atkValue = (card.atk ?? Math.max(1, 2 + (card.atkBonus || 0))) + buff;
+  const hpValue = card.hp ?? (5 + (card.hpBonus || 0));
 
   const visibleSkills = card.skills || [];
   const skillHtml = visibleSkills.length
     ? `<div class="skill-row">
-        ${visibleSkills.map(skill =>
-          `<div class="skill-slot" title="${skill.type}">${skill.icon || "✨"}</div>`
-        ).join("")}
+        ${visibleSkills.map(skill => {
+          // The tooltip (and now this inline badge) need the EFFECTIVE
+          // value for THIS specific card (its own level baked in), not
+          // just the raw skill definition — same helper skills.js
+          // itself uses when the skill actually resolves, so nothing
+          // ever shows a different number than what the skill really
+          // does. Stun/Revive have no scalar "strength" (skill.value is
+          // undefined for them), so they just don't get a number badge.
+          const hasValue = skill.value !== undefined;
+          const scaledValue = hasValue ? skills.getScaledSkillValue(skill, card) : null;
+          const valueBadgeHtml = hasValue ? `<span class="skill-value-badge">${scaledValue}</span>` : "";
+          return `<div class="skill-slot" data-skill-type="${skill.type}" data-skill-value="${scaledValue ?? ""}">${skill.icon || "✨"}${valueBadgeHtml}</div>`;
+        }).join("")}
       </div>`
     : "";
 
@@ -538,23 +681,48 @@ function getCardHtml(card) {
     ? `<div class="stun-badge">😵</div>`
     : "";
 
-  const levelHtml = card.level > 1
-    ? `<span class="level-badge">Lv.${card.level}</span>`
+  const poisonHtml = card.poison > 0
+    ? `<div class="poison-badge">☠️ ${card.poison}</div>`
+    : "";
+
+  const levelHtml = card.type === "character"
+    ? buildRankIndicatorHtml(card.level)
     : "";
 
   return `
     <img src="${card.image}" class="card-img">
     <div class="card-scrim"></div>
     ${card.isFusion ? `<img src="../images/fusion.png" class="fusion-icon">` : ""}
-    <h3>${card.name}${levelHtml}</h3>
+    <h3>
+      ${levelHtml}
+      <span class="card-name-text">${card.name}</span>
+    </h3>
     ${skillHtml}
     ${shieldHtml}
     ${stunHtml}
+    ${poisonHtml}
     <div class="card-stats">
       <div class="atk-badge ${buff > 0 ? "buffed" : ""}">⚔️ ${atkValue}</div>
       <div class="hp-badge">❤️ ${hpValue}</div>
     </div>
   `;
+}
+
+// 5-diamond Rank Indicator, replacing the old "Lv.X" text badge — reads
+// the level straight off the card instance (same field everything else
+// already uses, see buildPlayerCharacterCard/createBoardCard/fuseCards).
+// No new level system: this only decides how many of the 5 diamonds are
+// lit. Items never show this (they don't have levels in the Progression
+// model), only characters do.
+function buildRankIndicatorHtml(level) {
+  const maxLevel = window.Progression?.MAX_CARD_LEVEL || 5;
+  const clampedLevel = Math.min(maxLevel, Math.max(1, level || 1));
+
+  const diamonds = Array.from({ length: maxLevel }, (_, i) =>
+    `<span class="rank-diamond ${i < clampedLevel ? "lit" : ""}"></span>`
+  ).join("");
+
+  return `<div class="rank-indicator">${diamonds}</div>`;
 }
 
 function canFuse(cardA, cardB) {
@@ -640,6 +808,38 @@ async function playCardOnSlot(slotIndex) {
     return;
   }
 
+  // Tutorial gate: during a scripted "action" step, only the exact card
+  // + action the step is waiting for is allowed through — everything
+  // else is already blocked from even being DRAGGED (see renderHand),
+  // this is just the backstop in case something slipped through.
+  if (window.Tutorial?.isActive() && !window.Tutorial.isActionAllowed(draggedCard.name, slotIndex, !!target)) {
+    log(window.Tutorial.getBlockedMessage());
+    return;
+  }
+
+  // Fusion Research gate: owning the character AND the item is no
+  // longer enough by itself — a DEFINED combo also has to have been
+  // researched first (see progression.js's Fusion Research API). This
+  // only gates NAMED combos; a generic upgrade (no combos.js entry for
+  // this character+item pair) was never part of Research and stays
+  // completely free, same as always. Aborts cleanly before anything is
+  // touched (hand untouched, nothing locked) — same as the "can't place
+  // here" check above, so it never disturbs drag/touch state. The
+  // tutorial's own scripted Fusion is exempt — it can't have been
+  // researched yet (this may be the player's very first battle ever),
+  // and forcing them through the Research Lab before the tutorial can
+  // even finish would defeat the point.
+  if (target && !window.Tutorial?.isActive()) {
+    const character = draggedCard.type === "character" ? draggedCard : target;
+    const item = draggedCard.type === "item" ? draggedCard : target;
+    const comboKey = `${character.name}|${item.name}`;
+
+    if (combos[comboKey] && !window.Progression.isFusionResearched(comboKey)) {
+      log("🔒 השילוב הזה עדיין לא נחקר.");
+      return;
+    }
+  }
+
   actionLocked = true;
   clearSlotHighlights();
   hideFusionPreview();
@@ -677,20 +877,55 @@ async function playCardOnSlot(slotIndex) {
     await effects.wait(900);
   }
 
+  // Same idea, for the tutorial's own explanation popups (e.g. "🎉 you
+  // got a new skill!") — waits for the player to actually dismiss it
+  // before the attack phase banner gets a chance to appear underneath.
+  // A no-op Promise when there's no active tutorial (see onAction).
+  await window.Tutorial?.onAction(slotIndex, wasFusion);
+
   await resolveWeaknessTrigger("player", slotIndex);
+  if (checkGameOver()) return;
+
+  // A beat of breathing room so the player actually SEES the HP bar
+  // drop from the Weakness hit before the "ראיתם?" popup covers the
+  // board — resolveWeaknessTrigger's own damage animation already runs
+  // during the trigger above, but the modal used to appear right on
+  // its heels, before that was visually done registering. A true no-op
+  // (skipped entirely) outside the one specific tutorial step this
+  // matters for.
+  if (window.Tutorial?.isActive()) {
+    await effects.wait(900);
+  }
+
+  // The tutorial's live Weakness demo step waits for THIS — the effect
+  // needs to have actually happened before its "look what just
+  // happened!" explanation makes sense. A no-op Promise outside that
+  // one specific step (see onAfterWeakness in tutorial.js).
+  await window.Tutorial?.onAfterWeakness(slotIndex);
   if (checkGameOver()) return;
 
   await resolveAfterPlayerAction(slotIndex, wasFusion);
 }
 
 function createBoardCard(card) {
-  const hp = card.hp || 12;
+  // Items used to ALL get a flat 12 HP / ~1-2 ATK when placed standalone
+  // (a generic floor, ignoring each item's own atkBonus/hpBonus) — that
+  // made every item feel identical on the board even though their
+  // Fusion bonuses clearly differ. Now the standalone stats scale off
+  // the item's own bonus values instead, so a "bigger" item (like בית,
+  // +5 hp bonus) actually plays bigger than a "smaller" one (like כדור,
+  // +0 hp bonus) even before any Fusion happens. Kept well below
+  // character-level stats on purpose — items are still meant to feel
+  // weaker than characters, not equivalent, to preserve the balance
+  // already tuned for the roster.
+  const hp = card.hp ?? (5 + (card.hpBonus || 0));
+  const atk = card.atk ?? Math.max(1, 2 + (card.atkBonus || 0));
 
   return {
     ...structuredClone(card),
     hp,
     maxHp: hp,
-    atk: card.atk || Math.max(1, card.atkBonus || 1),
+    atk,
     type: card.type,
     isFusion: false,
     shield: 0,
@@ -759,7 +994,12 @@ function fuseCards(cardA, cardB) {
       // weaknesses (they're a whole new object from the combo table) —
       // but a weakness like "תמר → דגדוגים" should still apply to any
       // of her fused forms, not just her un-fused base card.
-      weaknesses: character.weaknesses || []
+      weaknesses: character.weaknesses || [],
+      // Same issue as weaknesses above — combo objects never carry a
+      // .level field, so a leveled-up character used to lose its level
+      // badge the moment it went through a named-combo Fusion (its
+      // level effectively became undefined). Carry it forward.
+      level: character.level
     };
   }
 
@@ -788,9 +1028,18 @@ function getFusionResult(cardA, cardB) {
 
   const character = cardA.type === "character" ? cardA : cardB;
   const item = cardA.type === "item" ? cardA : cardB;
-  const combo = combos[`${character.name}|${item.name}`];
+  const comboKey = `${character.name}|${item.name}`;
+  const combo = combos[comboKey];
 
   if (combo) {
+    // A defined combo that hasn't been researched yet (see Fusion
+    // Research in progression.js) would actually be REJECTED if you
+    // dropped here — the preview needs to say so instead of tempting
+    // you with stats you can't actually get yet.
+    if (!window.Progression.isFusionResearched(comboKey)) {
+      return { locked: true, name: "טרם נחקר", image: combo.image };
+    }
+
     // Same delta-based math as fuseCards's combo branch — the preview
     // has to show the REAL resulting stats (relative to this specific
     // card's current hp/atk), not the combo's fixed base-line numbers,
@@ -828,11 +1077,19 @@ function showFusionPreview(cardA, cardB, targetElement) {
     document.body.appendChild(preview);
   }
 
-  preview.innerHTML = `
-    <div class="fusion-preview-title">${result.name}</div>
-    <img src="${result.image}">
-    <div class="fusion-preview-stats">⚔️ ${result.atk} | ❤️ ${result.hp}</div>
-  `;
+  preview.classList.toggle("locked", !!result.locked);
+
+  preview.innerHTML = result.locked
+    ? `
+      <div class="fusion-preview-title">🔒 ${result.name}</div>
+      <img src="${result.image}" class="fusion-preview-locked-img">
+      <div class="fusion-preview-stats">עדיין לא נחקר במעבדה</div>
+    `
+    : `
+      <div class="fusion-preview-title">${result.name}</div>
+      <img src="${result.image}">
+      <div class="fusion-preview-stats">⚔️ ${result.atk} | ❤️ ${result.hp}</div>
+    `;
 
   const rect = targetElement.getBoundingClientRect();
   const width = preview.offsetWidth || 135;
@@ -870,7 +1127,25 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
   effects.playPhase("ATTACK PHASE!");
   await effects.wait(500);
 
-  await resolveSkills("player", "beforeAttack");
+  // Scoped to ONLY the card placed/fused this exact turn — beforeAttack
+  // is meant to be a one-time "just arrived" effect (same spirit as
+  // onFusion above), not something that keeps re-triggering every turn
+  // for as long as the card is alive. Without this scoping, Stun would
+  // lock an opponent out of attacking forever, Motivate/Revive would
+  // re-fire every turn too. beforeAttack now only covers Stun, Revive,
+  // and Motivate — see below for Shield/Punch/Heal/Poison, which are
+  // meant to feel like SUSTAINED effects instead and use their own
+  // "everyTurn" trigger.
+  await resolveSkills("player", "beforeAttack", { onlySlotIndex: actionSlotIndex });
+
+  if (checkGameOver()) return;
+
+  // Shield, Punch, Heal, and Poison are all meant to feel like
+  // sustained, ongoing effects rather than one-time buffs — they use
+  // their OWN trigger ("everyTurn"), resolved unscoped across the WHOLE
+  // board every turn, not just the card placed this turn. See
+  // combos.js for which skills use trigger:"everyTurn".
+  await resolveSkills("player", "everyTurn");
 
   if (checkGameOver()) return;
 
@@ -878,13 +1153,77 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
 
   if (checkGameOver()) return;
 
+  // Segment 1's scripted steps end right after the Fusion+Weakness
+  // combo, but the actual KILL only happens here, in the attack phase
+  // that follows — this is the check that confirms it actually landed
+  // and moves the tutorial into Segment 2 (force-placing a fresh AI
+  // card for the Skill demo). A no-op on every other turn of every
+  // other battle (isAwaitingKillConfirmation() is only ever true for
+  // the one specific turn this matters).
+  if (window.Tutorial?.isAwaitingKillConfirmation()) {
+    const aiSlot = window.Tutorial.getSegment1Slot();
+    const aiCardIsAlive = !!aiBoard[aiSlot];
+    const advancedToSegment2 = await window.Tutorial.confirmSegment1Kill(aiCardIsAlive);
+
+    if (advancedToSegment2) {
+      // Segment 2's own fresh AI card — same force-placement approach
+      // as Segment 1's, in a DIFFERENT lane (Segment 1's own fused
+      // card is still alive and occupying its own slot).
+      const segment2Slot = window.Tutorial.getSegment2Slot();
+      placeBossCard(window.Tutorial.getAiCharacter(), segment2Slot, 1);
+
+      const segment2AiStats = window.Tutorial.getSegment2AiStats();
+      const segment2AiCard = aiBoard[segment2Slot];
+      if (segment2AiCard) {
+        segment2AiCard.atk = segment2AiStats.atk;
+        segment2AiCard.hp = segment2AiStats.hp;
+        segment2AiCard.maxHp = segment2AiStats.hp;
+      }
+
+      render();
+    }
+  }
+
+  // Checked at the natural end of this turn's full processing (not
+  // synchronously inside onComplete — see tutorialCompletionPending's
+  // declaration for why) — this is where it's actually safe to start a
+  // whole new battle.
+  if (tutorialCompletionPending) {
+    tutorialCompletionPending = false;
+    await runTutorialCompletionFlow();
+    return;
+  }
+
   turn = "ai";
   render();
   await effects.wait(650);
   await runAiTurn();
 }
 
+// Poison doesn't deal its damage the moment it's applied — it ticks
+// once at the start of the POISONED card's own owner's turn, every
+// turn, until the card dies (or is otherwise removed). Called once per
+// side per round — see the two call sites in runAiTurn/end-of-player-turn.
+async function processPoisonTicks(owner) {
+  const board = owner === "player" ? playerBoard : aiBoard;
+
+  for (let i = 0; i < board.length; i++) {
+    const card = board[i];
+    if (!card || !(card.poison > 0)) continue;
+
+    log(`${card.name} סופג ${card.poison} נזק מהרעלה.`);
+    await damageCard(board, i, card.poison, "הרעלה", true);
+    render();
+
+    if (checkGameOver()) return;
+    await effects.wait(300);
+  }
+}
+
 async function runAiTurn() {
+  await processPoisonTicks("ai");
+  if (checkGameOver()) return;
+
   drawCard("ai");
 
   const move = ai.chooseMove({
@@ -938,7 +1277,15 @@ async function runAiTurn() {
   effects.playPhase("AI ATTACK!");
   await effects.wait(500);
 
-  await resolveSkills("ai", "beforeAttack");
+  // Same once-only scoping fix as the player's side above — see the
+  // detailed comment there for what beforeAttack vs everyTurn each
+  // cover now.
+  await resolveSkills("ai", "beforeAttack", { onlySlotIndex: aiActionSlotIndex });
+
+  if (checkGameOver()) return;
+
+  // Shield's own every-turn refresh — same as the player's side above.
+  await resolveSkills("ai", "everyTurn");
 
   if (checkGameOver()) return;
 
@@ -948,10 +1295,19 @@ async function runAiTurn() {
 
   turnNumber++;
   turn = "player";
-  actionLocked = false;
   drawCard("player");
   render();
   log("התור שלך — בחר קלף.");
+
+  // actionLocked stays true (inherited from the AI's turn) through the
+  // poison tick, so the player can't start dragging a card while a
+  // poison-damage animation is still resolving — only unlocked once
+  // that's fully done.
+  await processPoisonTicks("player");
+  if (checkGameOver()) return;
+
+  actionLocked = false;
+  render();
 }
 
 async function resolveSkills(owner, trigger, options = {}) {
@@ -965,6 +1321,11 @@ async function resolveSkills(owner, trigger, options = {}) {
     enemyBoard,
     trigger,
     onlySlotIndex: options.onlySlotIndex,
+    // Only meaningful for the "onAttack" trigger — whether this specific
+    // attack actually hit an enemy CARD (vs. a direct hit to the hero,
+    // when the lane was empty). Splash-style skills need this; a simple
+    // self-buff like Rage doesn't care and can ignore it.
+    hadTarget: options.hadTarget,
     effects,
     render,
     log,
@@ -1058,6 +1419,15 @@ async function autoAttack(attackerOwner) {
     render();
 
     if (checkGameOver()) return;
+
+    // Skills that trigger off the ATTACK itself (splash damage to
+    // adjacent lanes, a self-buff like Rage, etc.) — scoped to just the
+    // card that's attacking right now, separate from the beforeAttack
+    // skills that already resolved earlier this same turn.
+    await resolveSkills(attackerOwner, "onAttack", { onlySlotIndex: slotIndex, hadTarget: !!target });
+
+    if (checkGameOver()) return;
+
     await effects.wait(300);
   }
 
@@ -1147,6 +1517,14 @@ function exitBattle() {
   const sure = confirm("לצאת מהקרב? ההתקדמות בקרב הזה תאבד.");
   if (!sure) return;
 
+  // Leaving mid-tutorial is treated the same as explicitly skipping it —
+  // both clears the tutorial's own "active" flag (so it doesn't leak
+  // restriction/dimming into whatever battle comes next) and marks it
+  // seen (so it doesn't force again next time PLAY is tapped).
+  if (window.Tutorial?.isActive()) {
+    window.Tutorial.skip();
+  }
+
   gameEnded = true;
   actionLocked = true;
 
@@ -1231,7 +1609,145 @@ document.getElementById("exitBattleBtn").addEventListener("click", exitBattle);
 
 document.getElementById("skipTurnBtn").addEventListener("click", skipPlayerTurn);
 
+document.getElementById("tutorialSkipLink").addEventListener("click", () => {
+  window.Tutorial?.skip();
+  hideTutorialInstructionBanner();
+  render();
+});
+
+// Tap-to-explain: any skill icon on any card (board OR hand, player OR
+// AI) shows what it actually does. Delegated on the whole document
+// instead of wired per-card, since cards get torn down and rebuilt on
+// every render() — a per-element listener would need constant
+// re-wiring, this doesn't.
+document.addEventListener("click", event => {
+  const slot = event.target.closest(".skill-slot");
+  if (!slot) return;
+  showSkillInfoPopup(slot.dataset.skillType, slot.dataset.skillValue);
+});
+
+function showSkillInfoPopup(skillType, scaledValue) {
+  const info = skills.SKILL_INFO?.[skillType];
+  if (!info) return;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "choose-modal-backdrop skill-info-backdrop";
+  backdrop.innerHTML = `
+    <div class="choose-modal skill-info-modal">
+      <div class="choose-modal-title">${info.name}</div>
+      <div class="skill-info-desc">${info.description(scaledValue)}</div>
+    </div>
+  `;
+
+  // Tapping anywhere (including the card itself) dismisses it — this is
+  // a quick glance, not a screen that needs its own explicit close
+  // button.
+  backdrop.addEventListener("click", () => backdrop.remove());
+  document.body.appendChild(backdrop);
+}
+
+// === Tutorial UI ===
+// These are the callback implementations wired into window.Tutorial via
+// startGame — the tutorial module itself has no DOM knowledge at all,
+// it just calls these with plain data.
+
+function showTutorialOverlay(step, onContinue) {
+  hideTutorialInstructionBanner();
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "choose-modal-backdrop tutorial-overlay-backdrop";
+  backdrop.innerHTML = `
+    <div class="choose-modal tutorial-overlay-modal">
+      <div class="choose-modal-title">${step.title}</div>
+      <div class="tutorial-overlay-text">${step.text}</div>
+      <div class="upgrade-confirm-buttons">
+        <button type="button" class="tutorial-skip-btn">דלג על המדריך</button>
+        <button type="button" class="upgrade-confirm-ok">המשך</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  backdrop.querySelector(".upgrade-confirm-ok").onclick = () => {
+    backdrop.remove();
+    onContinue();
+  };
+  backdrop.querySelector(".tutorial-skip-btn").onclick = () => {
+    backdrop.remove();
+    window.Tutorial.skip();
+    hideTutorialInstructionBanner();
+    render();
+  };
+}
+
+function showTutorialInstructionBanner(text) {
+  const banner = document.getElementById("tutorialInstructionBanner");
+  if (!banner) return;
+  banner.querySelector(".tutorial-instruction-text").innerText = text;
+  banner.classList.remove("hidden");
+}
+
+function hideTutorialInstructionBanner() {
+  document.getElementById("tutorialInstructionBanner")?.classList.add("hidden");
+}
+
+// Fires once, right after the tutorial's scripted Fusion+Weakness combo
+// actually finishes off the AI's card (see the isAwaitingKillConfirmation
+// check in resolveAfterPlayerAction). Two quick confirmation modals, then
+// discards the tutorial battle entirely and drops straight into a real
+// Quick Battle at the easiest difficulty — a smooth "now go" instead of
+// leaving the player to figure out the next step themselves.
+async function runTutorialCompletionFlow() {
+  await showSimpleTutorialModal(
+    "🎉 כל הכבוד!",
+    "סיימת את המדריך! אפשר תמיד לחזור אליו דרך מסך HOW TO PLAY."
+  );
+  await showSimpleTutorialModal(
+    "בהצלחה! 💪",
+    "עכשיו תנסו בעצמכם — קרב אמיתי מתחיל."
+  );
+
+  // Matches QUICK_BATTLE_DIFFICULTIES.easy in ui.js exactly (kept as a
+  // literal here rather than reaching into ui.js's internals — this is
+  // the one specific, stable config the tutorial's own auto-start needs).
+  window.startBattle({
+    isQuickBattle: true,
+    enemyLevel: 1,
+    rewardConfig: {
+      key: "easy", label: "קל", emoji: "🟢", enemyLevel: 1,
+      coinsMin: 5, coinsMax: 15, bonusChance: 0.20, bonusType: "item",
+      researchMin: 10, researchMax: 20
+    }
+  });
+}
+
+function showSimpleTutorialModal(title, text) {
+  return new Promise(resolve => {
+    const backdrop = document.createElement("div");
+    backdrop.className = "choose-modal-backdrop tutorial-overlay-backdrop";
+    backdrop.innerHTML = `
+      <div class="choose-modal tutorial-overlay-modal">
+        <div class="choose-modal-title">${title}</div>
+        <div class="tutorial-overlay-text">${text}</div>
+        <div class="upgrade-confirm-buttons">
+          <button type="button" class="upgrade-confirm-ok tutorial-continue-full">המשך</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".upgrade-confirm-ok").onclick = () => {
+      backdrop.remove();
+      resolve();
+    };
+  });
+}
+
 // startGame() used to run automatically the moment script.js loaded.
 // Now the battle only starts when the player taps ⚔️ PLAY on the Home
 // screen (see ui.js), so it's exposed here instead of self-invoking.
 window.startBattle = startGame;
+
+// Reused by ui.js's Deck Builder so its own character tiles show the
+// exact same 5-diamond Rank Indicator as battle cards, instead of a
+// separate "Lv.X" text badge that would drift out of sync visually.
+window.buildRankIndicatorHtml = buildRankIndicatorHtml;

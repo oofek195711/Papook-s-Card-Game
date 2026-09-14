@@ -73,6 +73,10 @@ window.CampaignData.worlds.push({
           name: "תמר מארחת",
           type: "boss",
           enemyLevel: 2,
+          // Only תמר herself + items that actually combo with her — a
+          // themed final boss deck instead of drawing randomly from the
+          // ENTIRE card pool (the old default when enemyCards is unset).
+          enemyCards: ["תמר גולן", "ציפס אמריקאי", "מכחול", "מחשב", "חוף ים", "המבורגר"],
           enemyStartingBoard: [{ cardName: "תמר משחקת באוכל", slot: 2 }],
           rewards: [
             { type: "coins", amount: 150 },
@@ -123,6 +127,7 @@ window.CampaignData.worlds.push({
           name: "אור החלוץ מול הכל",
           type: "boss",
           enemyLevel: 2,
+          enemyCards: ["אור לוין", "כדור", "המבורגר"],
           enemyStartingBoard: [{ cardName: "אור החלוץ", slot: 2 }],
           rewards: [
             { type: "coins", amount: 150 },
@@ -173,6 +178,7 @@ window.CampaignData.worlds.push({
           name: "עומר מוריד לקרקע",
           type: "boss",
           enemyLevel: 2,
+          enemyCards: ["עומר שמואלי", "מדי אומנות לחימה", "מחשב", "כדור", "המבורגר"],
           enemyStartingBoard: [{ cardName: "עומר מוריד לקרקע", slot: 2 }],
           rewards: [
             { type: "coins", amount: 150 },
@@ -223,6 +229,7 @@ window.CampaignData.worlds.push({
           name: "The Fancy Dude על הבמה",
           type: "boss",
           enemyLevel: 2,
+          enemyCards: ["דור טלקר", "מערכת דיגיי", "המבורגר"],
           enemyStartingBoard: [{ cardName: "The fancy dude", slot: 2 }],
           rewards: [
             { type: "coins", amount: 150 },
@@ -276,6 +283,7 @@ window.CampaignData.worlds.push({
           name: "אופק הקטר",
           type: "boss",
           enemyLevel: 2,
+          enemyCards: ["אופק טלקר", "הגדלה", "רכבת", "מחשב", "כדור", "המבורגר"],
           enemyStartingBoard: [{ cardName: "אופק הקטר", slot: 2 }],
           rewards: [
             { type: "coins", amount: 200 },

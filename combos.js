@@ -28,14 +28,21 @@ Object.assign(window.CardCombos, {
     name: "אור החלוץ",
     image: "../images/Or_Ball.png",
     atk: 13,
-    hp: 18
+    hp: 18,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "אור לוין|המבורגר": {
     name: "אור המלצר",
     image: "../images/Or_Hamburger.png",
     atk: 11,
-    hp: 19
+    hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
+    skills: [
+      { type: "motivate", value: 2, trigger: "beforeAttack", icon: "📣" }
+    ]
   }
 });
 // Fusion combos for אופק טלקר.
@@ -47,7 +54,9 @@ Object.assign(window.CardCombos, {
     name: "אופק הגדלה",
     image: "../images/metzah.png",
     atk: 10,
-    hp: 24
+    hp: 24,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "אופק טלקר|רכבת": {
@@ -55,6 +64,8 @@ Object.assign(window.CardCombos, {
     image: "../images/ofek_train.png",
     atk: 11,
     hp: 21,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
       { type: "stun", trigger: "beforeAttack", icon: "🚂" }
     ]
@@ -64,7 +75,9 @@ Object.assign(window.CardCombos, {
     name: "אופק האקדמאי",
     image: "../images/ofek_academic.png",
     atk: 10,
-    hp: 20
+    hp: 20,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "אופק טלקר|כדור": {
@@ -72,8 +85,10 @@ Object.assign(window.CardCombos, {
     image: "../images/Ofek_Ball.png",
     atk: 10,
     hp: 22,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "shield", value: 4, trigger: "beforeAttack", icon: "🛡️" }
+      { type: "shield", value: 2, trigger: "everyTurn", icon: "🛡️" }
     ]
   },
 
@@ -81,7 +96,21 @@ Object.assign(window.CardCombos, {
     name: "אופק המלצר",
     image: "../images/Ofek_Hamburger.png",
     atk: 10,
-    hp: 20
+    hp: 20,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
+    skills: [
+      { type: "heal", value: 2, trigger: "everyTurn", icon: "❤️" }
+    ]
+  },
+
+  "אופק טלקר|חול": {
+    name: "אופק התותחן",
+    image: "../images/Ofek_Sand.png",
+    atk: 12,
+    hp: 21,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   }
 });
 // Fusion combos for דור טלקר.
@@ -94,8 +123,10 @@ Object.assign(window.CardCombos, {
     image: "../images/fancy_dude.jpeg",
     atk: 11,
     hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "heal", value: 3, trigger: "beforeAttack", icon: "❤️" }
+      { type: "heal", value: 2, trigger: "everyTurn", icon: "❤️" }
     ]
   },
 
@@ -103,7 +134,12 @@ Object.assign(window.CardCombos, {
     name: "דור הברמן",
     image: "../images/Dor_Hamburger.png",
     atk: 10,
-    hp: 18
+    hp: 18,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
+    skills: [
+      { type: "poison", value: 1, trigger: "everyTurn", icon: "☠️" }
+    ]
   }
 });
 // Fusion combos for עומר שמואלי.
@@ -116,8 +152,10 @@ Object.assign(window.CardCombos, {
     image: "../images/omer_ground.png",
     atk: 12,
     hp: 20,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "shield", value: 4, trigger: "beforeAttack", icon: "🛡️" }
+      { type: "shield", value: 2, trigger: "everyTurn", icon: "🛡️" }
     ]
   },
 
@@ -125,7 +163,9 @@ Object.assign(window.CardCombos, {
     name: "BiGBOY",
     image: "../images/bigboy.png",
     atk: 12,
-    hp: 21
+    hp: 21,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "עומר שמואלי|כדור": {
@@ -133,6 +173,8 @@ Object.assign(window.CardCombos, {
     image: "../images/Omer_Ball.png",
     atk: 12,
     hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
       { type: "motivate", value: 2, trigger: "beforeAttack", icon: "📣" }
     ]
@@ -142,7 +184,21 @@ Object.assign(window.CardCombos, {
     name: "עומר הברמן",
     image: "../images/Omer_Hamburger.png",
     atk: 11,
-    hp: 19
+    hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
+    skills: [
+      { type: "splash", value: 2, trigger: "onAttack", icon: "💥" }
+    ]
+  },
+
+  "עומר שמואלי|חול": {
+    name: "עומר התותחן",
+    image: "../images/Omer_Sand.png",
+    atk: 13,
+    hp: 20,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   }
 });
 // Fusion combos for תמר גולן.
@@ -152,11 +208,13 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "תמר גולן|ציפס אמריקאי": {
     name: "תמר משחקת באוכל",
-    image: "../images/tamar_food.png",
+    image: "../images/Tamar_Chips.png",
     atk: 11,
     hp: 18,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "punch", value: 3, trigger: "beforeAttack", icon: "👊" }
+      { type: "punch", value: 2, trigger: "everyTurn", icon: "👊" }
     ]
   },
 
@@ -164,14 +222,18 @@ Object.assign(window.CardCombos, {
     name: "תמר הציירת",
     image: "../images/Tamar_Mikhol.png",
     atk: 10,
-    hp: 17
+    hp: 17,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "תמר גולן|מחשב": {
     name: "תמר מעצבת אתרים",
     image: "../images/Tamar_PC.png",
     atk: 10,
-    hp: 17
+    hp: 17,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "תמר גולן|חוף ים": {
@@ -179,8 +241,10 @@ Object.assign(window.CardCombos, {
     image: "../images/tamar_navy.png",
     atk: 12,
     hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "shield", value: 5, trigger: "beforeAttack", icon: "🛡️" }
+      { type: "shield", value: 2, trigger: "everyTurn", icon: "🛡️" }
     ]
   },
 
@@ -188,7 +252,12 @@ Object.assign(window.CardCombos, {
     name: "תמר המארחת",
     image: "../images/Tamar_Hamburger.png",
     atk: 10,
-    hp: 17
+    hp: 17,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
+    skills: [
+      { type: "rage", value: 2, trigger: "onAttack", icon: "😡" }
+    ]
   }
 });
 // Fusion combos for שחר לוי.
@@ -197,19 +266,23 @@ window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
   "שחר לוי|צמח": {
-    name: "שחר הצמחוני",
-    image: "../images/shahar_vegan.png",
+    name: "שחר הצמחונית",
+    image: "../images/Shahar_Plant.png",
     atk: 9,
-    hp: 18
+    hp: 18,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "שחר לוי|המבורגר": {
     name: "שחר המבקרת",
-    image: "../images/shahar_critic.png",
+    image: "../images/shahar_Hamburger.png",
     atk: 11,
     hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "punch", value: 3, trigger: "beforeAttack", icon: "👊" }
+      { type: "punch", value: 2, trigger: "everyTurn", icon: "👊" }
     ]
   },
 
@@ -218,8 +291,10 @@ Object.assign(window.CardCombos, {
     image: "../images/shahar_psychologist.png",
     atk: 9,
     hp: 20,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "heal", value: 4, trigger: "beforeAttack", icon: "❤️" }
+      { type: "heal", value: 2, trigger: "everyTurn", icon: "❤️" }
     ]
   }
 });
@@ -229,10 +304,12 @@ window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
   "עמית גרינברג|צמח": {
-    name: "עמית הטבעוני",
-    image: "../images/amit_vegan.png",
+    name: "עמית הצמחוני",
+    image: "../images/Amit_Plant.png",
     atk: 9,
-    hp: 19
+    hp: 19,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   },
 
   "עמית גרינברג|חוף ים": {
@@ -240,17 +317,26 @@ Object.assign(window.CardCombos, {
     image: "../images/amit_navy.png",
     atk: 12,
     hp: 20,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "shield", value: 5, trigger: "beforeAttack", icon: "🛡️" }
+      { type: "shield", value: 2, trigger: "everyTurn", icon: "🛡️" }
     ]
   }
 });
 // Fusion combos for רותם שמי.
 // Key format: "<character name>|<item name>"
-// No combos defined yet — add them here when you have one.
 window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
+  "רותם שמי|צמח": {
+    name: "רותם הצמחונית",
+    image: "../images/Rotem_Plant.png",
+    atk: 10,
+    hp: 16,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
+  }
 });
 // Fusion combos for תמיר ביטון.
 // Key format: "<character name>|<item name>"
@@ -258,10 +344,12 @@ window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
   "תמיר ביטון|צמח": {
-    name: "תמיר הטבעוני",
-    image: "../images/tamir_vegan.png",
+    name: "תמיר הצמחוני",
+    image: "../images/Tamir_Plant.png",
     atk: 8,
-    hp: 20
+    hp: 20,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   }
 });
 // Fusion combos for יובל מזור.
@@ -274,8 +362,10 @@ Object.assign(window.CardCombos, {
     image: "../images/yuval_doctor.png",
     atk: 9,
     hp: 19,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
-      { type: "heal", value: 4, trigger: "beforeAttack", icon: "❤️" }
+      { type: "heal", value: 2, trigger: "everyTurn", icon: "❤️" }
     ]
   }
 });
@@ -289,6 +379,8 @@ Object.assign(window.CardCombos, {
     image: "../images/mor_nurse.png",
     atk: 9,
     hp: 18,
+    researchCost: 180,
+    researchTime: 7200000, // 2h
     skills: [
       { type: "revive", trigger: "onFusion", icon: "✨" }
     ]
@@ -301,8 +393,10 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "נועה גראור|צמח": {
     name: "נועה הצמחונית",
-    image: "../images/noa_vegan.png",
+    image: "../images/Noa_Plant.png",
     atk: 9,
-    hp: 19
+    hp: 19,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   }
 });
