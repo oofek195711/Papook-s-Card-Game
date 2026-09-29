@@ -32,7 +32,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 16, y: 66 },
       unlockRequiresStage: null,
       bossCharacter: "תמר גולן",
-      // background: "../images/tamar_background.png"  -- add once available
+      // background: "../images/Tamar_Background.png"  -- add once available
 
       stages: [
         {
@@ -93,7 +93,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 34, y: 30 },
       unlockRequiresStage: null,
       bossCharacter: "אור לוין",
-      background: "../images/or_background.png",
+      background: "../images/Or_Background.png",
 
       stages: [
         {
@@ -144,7 +144,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 52, y: 62 },
       unlockRequiresStage: null,
       bossCharacter: "עומר שמואלי",
-      background: "../images/omer_background.png",
+      background: "../images/Omer_Background.png",
 
       stages: [
         {
@@ -195,7 +195,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 70, y: 30 },
       unlockRequiresStage: null,
       bossCharacter: "דור טלקר",
-      background: "../images/dor_background.png",
+      background: "../images/Dor_Background.png",
 
       stages: [
         {
@@ -246,7 +246,7 @@ window.CampaignData.worlds.push({
       mapPosition: { x: 88, y: 66 },
       unlockRequiresStage: null,
       bossCharacter: "אופק טלקר",
-      background: "../images/ofek_background.png",
+      background: "../images/Ofek_Background.png",
 
       stages: [
         {
