@@ -52,7 +52,7 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "אופק טלקר|הגדלה": {
     name: "אופק הגדלה",
-    image: "../images/metzah.png",
+    image: "../images/Metzah.png",
     atk: 10,
     hp: 24,
     researchCost: 100,
@@ -61,7 +61,7 @@ Object.assign(window.CardCombos, {
 
   "אופק טלקר|רכבת": {
     name: "אופק הקטר",
-    image: "../images/ofek_train.png",
+    image: "../images/Ofek_Train.png",
     atk: 11,
     hp: 21,
     researchCost: 180,
@@ -73,7 +73,7 @@ Object.assign(window.CardCombos, {
 
   "אופק טלקר|מחשב": {
     name: "אופק האקדמאי",
-    image: "../images/ofek_academic.png",
+    image: "../images/Ofek_Academic.png",
     atk: 10,
     hp: 20,
     researchCost: 100,
@@ -155,7 +155,7 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "עומר שמואלי|מדי אומנות לחימה": {
     name: "עומר מוריד לקרקע",
-    image: "../images/omer_ground.png",
+    image: "../images/Omer_Ground.png",
     atk: 12,
     hp: 20,
     researchCost: 180,
@@ -167,7 +167,7 @@ Object.assign(window.CardCombos, {
 
   "עומר שמואלי|מחשב": {
     name: "BiGBOY",
-    image: "../images/bigboy.png",
+    image: "../images/Bigboy.png",
     atk: 12,
     hp: 21,
     researchCost: 100,
@@ -282,7 +282,7 @@ Object.assign(window.CardCombos, {
 
   "שחר לוי|המבורגר": {
     name: "שחר המבקרת",
-    image: "../images/shahar_Hamburger.png",
+    image: "../images/Shahar_Hamburger.png",
     atk: 11,
     hp: 19,
     researchCost: 180,
@@ -365,7 +365,7 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "יובל מזור|ציוד רופא": {
     name: "יובל הרופא",
-    image: "../images/yuval_doctor.png",
+    image: "../images/Yuval_Doctor.png",
     atk: 9,
     hp: 19,
     researchCost: 180,
@@ -382,7 +382,7 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "מור יוסף|ציוד רופא": {
     name: "מור האחות",
-    image: "../images/mor_nurse.png",
+    image: "../images/Mor_Nurse.png",
     atk: 9,
     hp: 18,
     researchCost: 180,

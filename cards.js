@@ -1,7 +1,7 @@
 window.CardData = (() => {
   const cards = [
     {
-      name: "אור לוין", type: "character", hp: 16, atk: 8, image: "../images/or.png",
+      name: "אור לוין", type: "character", hp: 16, atk: 8, image: "../images/Or.png",
       // שעון's effect is "stun" (skip next attack), not "damage" — same
       // effect TYPE the stun skill already uses, resolved by the SAME
       // registered "stun" resolver in weaknesses.js, no new effect type
@@ -13,43 +13,43 @@ window.CardData = (() => {
       // right counter) is still a real bit of thinking, not a spoiler.
       weaknessHint: "אור אף פעם לא רוצה לדעת מה השעה..."
     },
-    { name: "אופק טלקר", type: "character", hp: 20, atk: 6, image: "../images/ofek.png" },
+    { name: "אופק טלקר", type: "character", hp: 20, atk: 6, image: "../images/Ofek.png" },
     {
-      name: "דור טלקר", type: "character", hp: 13, atk: 9, image: "../images/dor.png",
+      name: "דור טלקר", type: "character", hp: 13, atk: 9, image: "../images/Dor.png",
       weaknesses: [{ item: "חתול", effect: "damage", percentOfMaxHp: 30 }],
       weaknessHint: "דור לא יכול לראות את החיה הזאת..."
     },
     {
-      name: "עומר שמואלי", type: "character", hp: 14, atk: 10, image: "../images/omer.png",
+      name: "עומר שמואלי", type: "character", hp: 14, atk: 10, image: "../images/Omer.png",
       weaknesses: [{ item: "קטשופ", effect: "damage", percentOfMaxHp: 30 }],
       weaknessHint: "מה עומר שונא?"
     },
     {
-      name: "תמר גולן", type: "character", hp: 15, atk: 8, image: "../images/tamar.png",
+      name: "תמר גולן", type: "character", hp: 15, atk: 8, image: "../images/Tamar.png",
       weaknesses: [{ item: "דגדוגים", effect: "damage", percentOfMaxHp: 30 }],
       weaknessHint: "נסו לחשוב - למה תמר רגישה ממש?"
     },
 
     // New characters
-    { name: "שחר לוי", type: "character", hp: 17, atk: 7, image: "../images/shahar.png" },
-    { name: "עמית גרינברג", type: "character", hp: 18, atk: 7, image: "../images/amit.png" },
-    { name: "רותם שמי", type: "character", hp: 14, atk: 9, image: "../images/rotem.png" },
-    { name: "תמיר ביטון", type: "character", hp: 19, atk: 6, image: "../images/tamir.png" },
-    { name: "יובל מזור", type: "character", hp: 16, atk: 8, image: "../images/yuval.png" },
-    { name: "מור יוסף", type: "character", hp: 17, atk: 7, image: "../images/mor.png" },
-    { name: "נועה גראור", type: "character", hp: 16, atk: 8, image: "../images/noa.png" },
+    { name: "שחר לוי", type: "character", hp: 17, atk: 7, image: "../images/Shahar.png" },
+    { name: "עמית גרינברג", type: "character", hp: 18, atk: 7, image: "../images/Amit.png" },
+    { name: "רותם שמי", type: "character", hp: 14, atk: 9, image: "../images/Rotem.png" },
+    { name: "תמיר ביטון", type: "character", hp: 19, atk: 6, image: "../images/Tamir.png" },
+    { name: "יובל מזור", type: "character", hp: 16, atk: 8, image: "../images/Yuval.png" },
+    { name: "מור יוסף", type: "character", hp: 17, atk: 7, image: "../images/Mor.png" },
+    { name: "נועה גראור", type: "character", hp: 16, atk: 8, image: "../images/Noa.png" },
     // Balanced stats for now (matches the roster's "average" profile,
     // like אור/יובל/נועה) — easy to shift once there's an actual combo
     // theme for her to lean into.
     { name: "שני", type: "character", hp: 16, atk: 8, image: "../images/Shani.png" },
 
-    { name: "כדור", type: "item", atkBonus: 2, hpBonus: 0, image: "../images/ball.png" },
-    { name: "מערכת דיגיי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/dj.png" },
-    { name: "הגדלה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/bigger.webp" },
+    { name: "כדור", type: "item", atkBonus: 2, hpBonus: 0, image: "../images/Ball.png" },
+    { name: "מערכת דיגיי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Dj.png" },
+    { name: "הגדלה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/Bigger.webp" },
     { name: "מדי אומנות לחימה", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/GI.png" },
-    { name: "ציפס אמריקאי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/chips.jpg" },
-    { name: "רכב", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/car.png" },
-    { name: "בית", type: "item", atkBonus: 1, hpBonus: 5, image: "../images/house.jpg" },
+    { name: "ציפס אמריקאי", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Chips.jpg" },
+    { name: "רכב", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/Car.png" },
+    { name: "בית", type: "item", atkBonus: 1, hpBonus: 5, image: "../images/House.jpg" },
 
     // חתול/קטשופ/דגדוגים are primarily WEAKNESS-trigger items (see the
     // weaknesses[] arrays above) — used to be 0/0 for regular Fusion,
@@ -57,27 +57,27 @@ window.CardData = (() => {
     // +1/+1 so they're always worth using, even before their weakness
     // matters. מיקרופון has no combo yet either, same small bump ready
     // for whenever it does.
-    { name: "חתול", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/cat.png" },
-    { name: "קטשופ", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/ketshup.png" },
-    { name: "דגדוגים", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/digdugim.png" },
-    { name: "מיקרופון", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/microphone.png" },
-    { name: "רכבת", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/train.jpg" },
-    { name: "מכחול", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/mikhol.jpg" },
-    { name: "מחשב", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/computer.jpg" },
+    { name: "חתול", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/Cat.png" },
+    { name: "קטשופ", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/Ketshup.png" },
+    { name: "דגדוגים", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/Digdugim.png" },
+    { name: "מיקרופון", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/Microphone.png" },
+    { name: "רכבת", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/Train.jpg" },
+    { name: "מכחול", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Mikhol.jpg" },
+    { name: "מחשב", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Computer.jpg" },
 
     // New items
-    { name: "צמח", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/plant.png" },
-    { name: "חול", type: "item", atkBonus: 2, hpBonus: 1, image: "../images/sand.jpg" },
+    { name: "צמח", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/Plant.png" },
+    { name: "חול", type: "item", atkBonus: 2, hpBonus: 1, image: "../images/Sand.jpg" },
     // Primarily a WEAKNESS-trigger item for אור לוין (see his
     // weaknesses[] above) — same small +1/+1 pattern already used for
     // the other weakness-only items (חתול/קטשופ/דגדוגים/מיקרופון), so
     // fusing it still does SOMETHING even outside that specific matchup.
-    { name: "שעון", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/watch.png" },
-    { name: "ציוד רופא", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/doctor_kit.png" },
-    { name: "חוף ים", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/beach.jpg" },
+    { name: "שעון", type: "item", atkBonus: 1, hpBonus: 1, image: "../images/Watch.png" },
+    { name: "ציוד רופא", type: "item", atkBonus: 1, hpBonus: 2, image: "../images/Doctor_Kit.png" },
+    { name: "חוף ים", type: "item", atkBonus: 3, hpBonus: 2, image: "../images/Beach.jpg" },
 
     // New items
-    { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/hamburger.png" },
+    { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Hamburger.png" },
     { name: "ספה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/Soffa.png" },
     { name: "יין", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Wine.png" },
     { name: "בעל הבית", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/BaalHabait.png" }
