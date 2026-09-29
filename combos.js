@@ -51,7 +51,7 @@ window.CardCombos = window.CardCombos || {};
 
 Object.assign(window.CardCombos, {
   "אופק טלקר|הגדלה": {
-    name: "אופק הגדלה",
+    name: "מצח רצח",
     image: "../images/Metzah.png",
     atk: 10,
     hp: 24,
@@ -401,9 +401,9 @@ Object.assign(window.CardCombos, {
     researchTime: 3600000, // 1h
   },
 
-  "מור יוסף|בעל הבית": {
+  "מור יוסף|המבורגר": {
     name: "מור בעלת הבית",
-    image: "../images/Mor_BaalHabait.png",
+    image: "../images/Mor_Hamburger.png",
     atk: 9,
     hp: 20,
     researchCost: 100,
@@ -433,9 +433,9 @@ Object.assign(window.CardCombos, {
     researchTime: 3600000, // 1h
   },
 
-  "נועה גראור|בעל הבית": {
+  "נועה גראור|המבורגר": {
     name: "נועה בעלת הבית",
-    image: "../images/Noa_BaalHabait.png",
+    image: "../images/Noa_Hamburger.png",
     atk: 10,
     hp: 19,
     researchCost: 100,
