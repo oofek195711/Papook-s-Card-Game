@@ -36,6 +36,47 @@ window.CampaignUI = (() => {
     return "locked";
   }
 
+  // The very first screen CAMPAIGN opens into — one tile per world.
+  // Locked worlds (isWorldUnlocked() false) are shown greyed out with a
+  // lock icon and a short "how to unlock" hint, not hidden entirely —
+  // the player should be able to see there's more coming, just not
+  // reach it yet.
+  function renderWorldSelection() {
+    const P = window.Progression;
+    const worlds = window.CampaignData?.worlds || [];
+
+    const tilesHtml = worlds.map(world => {
+      const unlocked = P.isWorldUnlocked(world.id);
+      const completed = P.isWorldCompleted(world.id);
+      const state = nodeState(completed, unlocked);
+
+      const requirementText = !unlocked && world.unlockRequiresWorldCompleted
+        ? `<div class="world-select-locked-hint">🔒 נפתח לאחר השלמת "${getWorld(world.unlockRequiresWorldCompleted)?.name || ""}"</div>`
+        : "";
+
+      return `
+        <button type="button" class="world-select-tile ${state}" data-world-id="${world.id}" ${unlocked ? "" : "disabled"}>
+          <div class="world-select-thumb" style="background-image:url('${world.background}')">
+            ${!unlocked ? '<div class="world-select-lock-overlay">🔒</div>' : ""}
+            ${completed ? '<div class="world-select-done-badge">✓ הושלם</div>' : ""}
+          </div>
+          <div class="world-select-name">${world.name}</div>
+          ${requirementText}
+        </button>
+      `;
+    }).join("");
+
+    document.getElementById("worldSelectList").innerHTML = tilesHtml;
+
+    document.querySelectorAll(".world-select-tile:not([disabled])").forEach(tile => {
+      tile.addEventListener("click", () => {
+        renderWorldMap(tile.dataset.worldId);
+        window.UI.showScreen("campaignWorldScreen");
+        window.UI.maybeShowScreenIntro("campaignWorldScreen");
+      });
+    });
+  }
+
   // Coins are shown plainly ("💰60"); a new-item reward stays a mystery
   // ("🎁 ???") even in the preview, so it's not spoiled before you win it.
   function rewardsPreviewHtml(stage, revealed) {
@@ -134,6 +175,20 @@ window.CampaignUI = (() => {
     document.getElementById("campaignLocationTitle").innerText = location.name;
     applyScreenBackground("campaignLocationScreen", location.background);
 
+    // Two INDEPENDENT kinds of hint, both riddle-style and both never
+    // naming the actual counter card: an item-Weakness hint (tied to
+    // the boss CHARACTER — see cards.js's weaknessHint) and a mechanic
+    // hint (tied to this specific LOCATION — see the location's own
+    // mechanicHint, e.g. Amit's shield encounter in תל אביב). A boss
+    // can have either, both, or neither.
+    const { cards } = window.CardData;
+    const bossCard = cards.find(c => c.name === location.bossCharacter);
+    const hintsHtml = [
+      bossCard?.weaknessHint ? `<div class="boss-hint-box">🤔 ${bossCard.weaknessHint}</div>` : "",
+      location.mechanicHint ? `<div class="boss-hint-box">🧩 ${location.mechanicHint}</div>` : ""
+    ].join("");
+    document.getElementById("campaignLocationHint").innerHTML = hintsHtml;
+
     const P = window.Progression;
     const n = location.stages.length;
     const xFor = i => (n === 1 ? 50 : 10 + i * (80 / (n - 1)));
@@ -211,8 +266,13 @@ window.CampaignUI = (() => {
   }
 
   function init() {
+    document.getElementById("worldSelectBackBtn").addEventListener("click", () => {
+      window.UI.showScreen("gameModesScreen");
+    });
+
     document.getElementById("campaignWorldBackBtn").addEventListener("click", () => {
-      window.UI.showScreen("homeScreen");
+      renderWorldSelection();
+      window.UI.showScreen("worldSelectScreen");
     });
 
     document.getElementById("campaignLocationBackBtn").addEventListener("click", () => {
@@ -223,5 +283,5 @@ window.CampaignUI = (() => {
 
   init();
 
-  return { renderWorldMap, renderLocationMap, onStageComplete, exitToLocationMap };
+  return { renderWorldSelection, renderWorldMap, renderLocationMap, onStageComplete, exitToLocationMap };
 })();

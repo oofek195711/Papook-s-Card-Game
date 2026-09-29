@@ -120,7 +120,7 @@ window.CardCombos = window.CardCombos || {};
 Object.assign(window.CardCombos, {
   "דור טלקר|מערכת דיגיי": {
     name: "The fancy dude",
-    image: "../images/fancy_dude.jpeg",
+    image: "../images/Dor_DJ.png",
     atk: 11,
     hp: 19,
     researchCost: 180,
@@ -138,7 +138,13 @@ Object.assign(window.CardCombos, {
     researchCost: 180,
     researchTime: 7200000, // 2h
     skills: [
-      { type: "poison", value: 1, trigger: "everyTurn", icon: "☠️" }
+      // ignoresShield is a deliberate, per-combo choice — not something
+      // every Poison user gets automatically — see skills.js's poison
+      // resolver and script.js's damageCard for where this actually
+      // takes effect. This is the game's first "bypasses Shield" tool,
+      // meant as the counter-play to shield-stacking encounters (e.g.
+      // the Amit boss in תל אביב).
+      { type: "poison", value: 1, trigger: "everyTurn", icon: "☠️", ignoresShield: true }
     ]
   }
 });
@@ -238,7 +244,7 @@ Object.assign(window.CardCombos, {
 
   "תמר גולן|חוף ים": {
     name: "תמר חיילת ים",
-    image: "../images/tamar_navy.png",
+    image: "../images/Tamar_Beach.png",
     atk: 12,
     hp: 19,
     researchCost: 180,
@@ -288,7 +294,7 @@ Object.assign(window.CardCombos, {
 
   "שחר לוי|ספה": {
     name: "שחר הפסיכולוגית",
-    image: "../images/shahar_psychologist.png",
+    image: "../images/Shahar_Soffa.png",
     atk: 9,
     hp: 20,
     researchCost: 180,
@@ -314,7 +320,7 @@ Object.assign(window.CardCombos, {
 
   "עמית גרינברג|חוף ים": {
     name: "עמית חייל ים",
-    image: "../images/amit_navy.png",
+    image: "../images/Amit_Beach.png",
     atk: 12,
     hp: 20,
     researchCost: 180,
@@ -384,6 +390,24 @@ Object.assign(window.CardCombos, {
     skills: [
       { type: "revive", trigger: "onFusion", icon: "✨" }
     ]
+  },
+
+  "מור יוסף|יין": {
+    name: "מור הברמנית",
+    image: "../images/Mor_Wine.png",
+    atk: 9,
+    hp: 19,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
+  },
+
+  "מור יוסף|בעל הבית": {
+    name: "מור בעלת הבית",
+    image: "../images/Mor_BaalHabait.png",
+    atk: 9,
+    hp: 20,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
   }
 });
 // Fusion combos for נועה גראור.
@@ -396,6 +420,39 @@ Object.assign(window.CardCombos, {
     image: "../images/Noa_Plant.png",
     atk: 9,
     hp: 19,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
+  },
+
+  "נועה גראור|יין": {
+    name: "נועה הברמנית",
+    image: "../images/Noa_Wine.png",
+    atk: 10,
+    hp: 18,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
+  },
+
+  "נועה גראור|בעל הבית": {
+    name: "נועה בעלת הבית",
+    image: "../images/Noa_BaalHabait.png",
+    atk: 10,
+    hp: 19,
+    researchCost: 100,
+    researchTime: 3600000, // 1h
+  }
+});
+
+// Fusion combos for שני.
+// Key format: "<character name>|<item name>"
+window.CardCombos = window.CardCombos || {};
+
+Object.assign(window.CardCombos, {
+  "שני|יין": {
+    name: "שנינה בנינה",
+    image: "../images/Shani_Wine.png",
+    atk: 10,
+    hp: 18,
     researchCost: 100,
     researchTime: 3600000, // 1h
   }

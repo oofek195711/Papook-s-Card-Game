@@ -51,6 +51,22 @@ window.Tutorial = (() => {
   const AI_HP_SEGMENT2 = 10;
   const AI_ATK_SEGMENT2 = 5; // flavor
 
+  // Overrides the AI's normal starting hero HP (30) for the tutorial
+  // battle specifically. Rough math behind 20, factoring in the
+  // "final boss" Omer (see awaitingTutorialFinalBoss in script.js) that
+  // gets placed facing אופק once Segment 2's own AI card dies: that
+  // same kill-turn, אופק's attack still lands ~3 direct damage on the
+  // hero (the final boss isn't placed until AFTER this turn's attack
+  // phase) — hero down to ~17. Next turn, אופק kills the final boss
+  // instead of hitting the hero, but Tamar's own lane is empty by then
+  // and lands ~13 on the hero directly — down to ~4, barely surviving.
+  // The turn after that, both lanes are empty (plus EXTRA_ITEM once its
+  // own summoning sickness clears) — comfortably lethal. 20 means the
+  // player gets to see the final boss actually fought and killed, not
+  // just more free hits to the hero, while the whole thing still wraps
+  // up within a few real turns.
+  const AI_HERO_HP = 20;
+
   let phase = "idle"; // "idle" | "scripted" | "done"
   let stepIndex = -1;
   let callbacks = null; // wired up by script.js — see start()
@@ -74,12 +90,22 @@ window.Tutorial = (() => {
   // just sit unused (and visually dimmed, see script.js's renderHand)
   // until their own steps come up, how ever many turns into segment 1
   // that ends up taking.
+  // The 5th card here (a plain item, no scripted role) isn't part of
+  // the starting hand — only 4 cards get drawn at battle start (see
+  // script.js). It sits in the deck and gets drawn naturally on a
+  // later turn via the normal per-turn draw, giving the player
+  // something real to do with their own free turns once the battle
+  // keeps going after Segment 2 (see AI_HERO_HP below for why there
+  // ARE free turns to fill at all).
+  const EXTRA_ITEM = "חתול";
+
   function buildTutorialDeckNames() {
     return [
       SEGMENT1_CHARACTER,
       SEGMENT1_ITEM,
       SEGMENT2_CHARACTER,
-      SEGMENT2_ITEM
+      SEGMENT2_ITEM,
+      EXTRA_ITEM
     ];
   }
 
@@ -90,6 +116,7 @@ window.Tutorial = (() => {
   function getSegment1AiStats() { return { atk: AI_ATK_SEGMENT1, hp: AI_HP_SEGMENT1 }; }
   function getSegment2Slot() { return SEGMENT2_SLOT; }
   function getSegment2AiStats() { return { atk: AI_ATK_SEGMENT2, hp: AI_HP_SEGMENT2 }; }
+  function getAiHeroHp() { return AI_HERO_HP; }
 
   function segment2SkillExplanation() {
     const combo = window.CardData?.combos?.[`${SEGMENT2_CHARACTER}|${SEGMENT2_ITEM}`];
@@ -169,6 +196,12 @@ window.Tutorial = (() => {
       id: "explain-skill",
       type: "overlay",
       ...segment2SkillExplanation()
+    },
+    {
+      id: "explain-research-lab",
+      type: "overlay",
+      title: "מעבדת השילובים (Lab) 🔬",
+      text: "חלק מהשילובים חייבים מחקר לפני שאפשר להשתמש בהם בקרב — לא מספיק רק להחזיק את הקלפים. כל מחקר עולה נקודות מחקר (🧬) ולוקח זמן אמיתי להשלים, אז כדאי לבקר במעבדה מדי פעם ולראות מה כדאי לחקור."
     },
     {
       id: "finish",
@@ -331,6 +364,7 @@ window.Tutorial = (() => {
     getSegment1AiStats,
     getSegment2Slot,
     getSegment2AiStats,
+    getAiHeroHp,
     isActionAllowed,
     getBlockedMessage,
     onAction,

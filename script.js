@@ -27,15 +27,37 @@ let draggedCardIndex = null;
 // Which campaign stage (if any) this battle belongs to. null = a normal
 // "quick battle" from the Home screen's PLAY button. Set by startGame().
 let currentBattleConfig = null;
+// Set once, right when a tutorial battle starts (see startGame) —
+// watches for Segment 2's AI card to die, then force-places ONE more
+// weak AI card into Segment 1's own lane (facing אופק, whose fused
+// card only has 3 HP — giving it a real, harmless target instead of
+// hitting the hero directly makes the last stretch of the battle feel
+// like an actual fight rather than free damage). Cleared the moment it
+// fires; never checked again after that.
+//
+// Firing requires BOTH this flag AND segment2BossPlaced below — just
+// checking "is Segment 2's slot empty" on its own is true from the
+// very first turn already (Segment 2's boss doesn't exist yet at that
+// point, its slot is simply, coincidentally, empty), which used to
+// fire this WAY too early: on turn one, before Segment 1's own boss
+// even had a chance to be placed with its real stats, overwriting it
+// with the "harmless punching bag" stats meant for the LATER card, and
+// consuming the flag so the real trigger point never fired at all.
+// segment2BossPlaced only becomes true once Segment 2's card is
+// actually placed for real, so "the slot is now empty" can only mean
+// "it died" from that point on.
+let awaitingTutorialFinalBoss = false;
+let segment2BossPlaced = false;
+
 // Set by the tutorial's onComplete callback (see startGame's
-// Tutorial.start wiring) — NOT acted on immediately, since onComplete
-// can fire from deep inside an in-progress playCardOnSlot() call's own
-// await chain (Segment 2's final fuse action -> skill popup -> finish,
-// all still within that SAME call). Actually starting a new battle
-// right then (which resetBattleState()s everything) would corrupt the
-// STILL-RUNNING original call's own slot/board references. Instead,
-// this just gets checked once, at the natural end of that turn's full
-// processing — see the check at the end of resolveAfterPlayerAction.
+// Tutorial.start wiring) once the SCRIPTED teaching steps are done
+// (Segment 1's Weakness demo + Segment 2's Skill demo). Does NOT end
+// the battle early anymore — the player keeps full normal control and
+// the battle plays out for real, until the AI is actually defeated
+// through checkGameOver()'s own win detection. This flag is only
+// checked there, to decide whether that win screen should ALSO chain
+// into the tutorial's reward/guide flow (runTutorialCompletionFlow)
+// once the player continues past it, instead of just going home.
 let tutorialCompletionPending = false;
 
 // Touch drag state
@@ -149,6 +171,13 @@ function resetBattleState() {
   gameEnded = false;
   draggedCardIndex = null;
   currentBattleConfig = null;
+  // Reset here (not just consumed-then-cleared within one battle's own
+  // lifecycle) so neither flag can leak into a FOLLOWING battle if a
+  // tutorial run is ever abandoned mid-way (see exitBattle) before it
+  // got the chance to clear itself normally.
+  awaitingTutorialFinalBoss = false;
+  segment2BossPlaced = false;
+  tutorialCompletionPending = false;
 }
 
 // Looks up a card definition by its DISPLAY name, checking both the base
@@ -265,6 +294,19 @@ function startGame(battleConfig = null) {
   currentBattleConfig = battleConfig;
   applyBattleBackground(battleConfig?.background);
 
+  // Captured HERE, before anything else runs — by the time the battle
+  // actually ENDS (checkGameOver, much later), hasSeenTutorial has
+  // already flipped to true (tutorial.js's finish() sets it the moment
+  // the SCRIPTED steps complete, long before the real battle win/loss
+  // is even known). Reading it this early is the only way to tell a
+  // genuine first-time completion apart from a replay via the "🎓 הפעל
+  // את המדריך" button in How To Play — otherwise every replay would
+  // silently look like a fresh completion and re-grant the same
+  // welcome-kit rewards every single time.
+  if (battleConfig?.isTutorial) {
+    battleConfig.isFirstTimeTutorial = window.Progression.shouldShowTutorial();
+  }
+
   if (battleConfig?.isTutorial) {
     // Fixed, unshuffled deck. The single AI card is FORCE-PLACED (same
     // placeBossCard() mechanism campaign bosses already use) rather
@@ -315,6 +357,15 @@ function startGame(battleConfig = null) {
       aiCard.hp = aiStats.hp;
       aiCard.maxHp = aiStats.hp;
     }
+
+    // Overrides resetBattleState()'s normal MAX_HP (30) — see
+    // tutorial.js's AI_HERO_HP for the reasoning behind this exact
+    // number.
+    aiHp = window.Tutorial.getAiHeroHp();
+
+    // Armed here, checked later in resolveAfterPlayerAction — see
+    // awaitingTutorialFinalBoss's own declaration for what it does.
+    awaitingTutorialFinalBoss = true;
   }
 
   render();
@@ -668,7 +719,13 @@ function getCardHtml(card) {
           const hasValue = skill.value !== undefined;
           const scaledValue = hasValue ? skills.getScaledSkillValue(skill, card) : null;
           const valueBadgeHtml = hasValue ? `<span class="skill-value-badge">${scaledValue}</span>` : "";
-          return `<div class="skill-slot" data-skill-type="${skill.type}" data-skill-value="${scaledValue ?? ""}">${skill.icon || "✨"}${valueBadgeHtml}</div>`;
+          // A tiny sword badge on any skill tagged as bypassing Shield
+          // (see combos.js's ignoresShield) — visible on the card itself
+          // (hand, board, Collection), not just buried in the tooltip
+          // text you'd only see by tapping. data-skill-pierce feeds the
+          // tap-to-explain popup's extra note (see showSkillInfoPopup).
+          const pierceBadgeHtml = skill.ignoresShield ? `<span class="skill-pierce-badge">🗡️</span>` : "";
+          return `<div class="skill-slot" data-skill-type="${skill.type}" data-skill-value="${scaledValue ?? ""}" data-skill-pierce="${skill.ignoresShield ? "1" : ""}">${skill.icon || "✨"}${valueBadgeHtml}${pierceBadgeHtml}</div>`;
         }).join("")}
       </div>`
     : "";
@@ -1153,6 +1210,14 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
 
   if (checkGameOver()) return;
 
+  // Poison now ticks HERE — right after the poisoned card's own
+  // owner's attack, not before it. A poisoned card still gets to
+  // attack this turn; the poison damage only catches up with it
+  // afterward (and can still kill it before its NEXT turn, same as
+  // before — just one beat later in the sequence).
+  await processPoisonTicks("player");
+  if (checkGameOver()) return;
+
   // Segment 1's scripted steps end right after the Fusion+Weakness
   // combo, but the actual KILL only happens here, in the attack phase
   // that follows — this is the check that confirms it actually landed
@@ -1180,18 +1245,44 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
         segment2AiCard.maxHp = segment2AiStats.hp;
       }
 
+      // Arms the LATER check below — "Segment 2's slot is empty" only
+      // means "it died" from this point on, not "it never existed yet".
+      segment2BossPlaced = true;
+
       render();
     }
   }
 
-  // Checked at the natural end of this turn's full processing (not
-  // synchronously inside onComplete — see tutorialCompletionPending's
-  // declaration for why) — this is where it's actually safe to start a
-  // whole new battle.
-  if (tutorialCompletionPending) {
-    tutorialCompletionPending = false;
-    await runTutorialCompletionFlow();
-    return;
+  // Fires exactly once, whenever Segment 2's AI card actually dies
+  // (checked by that slot going empty — works whether it died to
+  // Tamar's own attack this same turn, or to something else entirely).
+  // Doesn't touch tutorial.js's own state at all — by this point the
+  // tutorial's SCRIPTED steps are usually already done (see
+  // tutorialCompletionPending above), this is purely a one-time board
+  // event layered on top of the battle continuing normally afterward.
+  if (awaitingTutorialFinalBoss && segment2BossPlaced && window.Tutorial) {
+    const segment2Slot = window.Tutorial.getSegment2Slot();
+    if (!aiBoard[segment2Slot]) {
+      awaitingTutorialFinalBoss = false;
+
+      const finalSlot = window.Tutorial.getSegment1Slot();
+      placeBossCard(window.Tutorial.getAiCharacter(), finalSlot, 1);
+
+      // Deliberately harmless (1 ATK) but with real HP (2, not 1) so
+      // it survives at least one hit and gives אופק — whose own fused
+      // card only has 3 HP — an actual target to fight instead of
+      // free damage straight to the hero, without ever being able to
+      // meaningfully hurt him back even once its own summoning
+      // sickness wears off.
+      const finalCard = aiBoard[finalSlot];
+      if (finalCard) {
+        finalCard.atk = 1;
+        finalCard.hp = 2;
+        finalCard.maxHp = 2;
+      }
+
+      render();
+    }
   }
 
   turn = "ai";
@@ -1201,9 +1292,12 @@ async function resolveAfterPlayerAction(actionSlotIndex, wasFusion) {
 }
 
 // Poison doesn't deal its damage the moment it's applied — it ticks
-// once at the start of the POISONED card's own owner's turn, every
-// turn, until the card dies (or is otherwise removed). Called once per
-// side per round — see the two call sites in runAiTurn/end-of-player-turn.
+// once per side per round, right after that side's OWN attack phase
+// (not before it) — a poisoned card still gets to attack this turn;
+// the poison damage only catches up with it afterward. Continues every
+// round until the card dies (or is otherwise removed). See the two
+// call sites: right after autoAttack("player") above, and right after
+// autoAttack("ai") in runAiTurn below.
 async function processPoisonTicks(owner) {
   const board = owner === "player" ? playerBoard : aiBoard;
 
@@ -1212,7 +1306,7 @@ async function processPoisonTicks(owner) {
     if (!card || !(card.poison > 0)) continue;
 
     log(`${card.name} סופג ${card.poison} נזק מהרעלה.`);
-    await damageCard(board, i, card.poison, "הרעלה", true);
+    await damageCard(board, i, card.poison, "הרעלה", true, !!card.poisonIgnoresShield, true);
     render();
 
     if (checkGameOver()) return;
@@ -1221,9 +1315,6 @@ async function processPoisonTicks(owner) {
 }
 
 async function runAiTurn() {
-  await processPoisonTicks("ai");
-  if (checkGameOver()) return;
-
   drawCard("ai");
 
   const move = ai.chooseMove({
@@ -1293,18 +1384,16 @@ async function runAiTurn() {
 
   if (checkGameOver()) return;
 
+  // Same relocation as the player's side — right after the poisoned
+  // card's own owner's attack, not before it.
+  await processPoisonTicks("ai");
+  if (checkGameOver()) return;
+
   turnNumber++;
   turn = "player";
   drawCard("player");
   render();
   log("התור שלך — בחר קלף.");
-
-  // actionLocked stays true (inherited from the AI's turn) through the
-  // poison tick, so the player can't start dragging a card while a
-  // poison-damage animation is still resolving — only unlocked once
-  // that's fully done.
-  await processPoisonTicks("player");
-  if (checkGameOver()) return;
 
   actionLocked = false;
   render();
@@ -1438,7 +1527,17 @@ async function autoAttack(attackerOwner) {
   render();
 }
 
-async function damageCard(board, slotIndex, damage, attackerName, isSkillDamage = false) {
+// ignoreShield: true skips the shield-absorption step entirely — used
+// by damage sources explicitly tagged as piercing (see combos.js's
+// ignoresShield flag on specific skills, e.g. Dor's Poison). This is
+// the counter-play tool for shield-stacking encounters (e.g. the Amit
+// boss in תל אביב): shield still blocks everything else normally, just
+// not attacks that were deliberately built to bypass it.
+// isPoisonDamage/isPunchDamage swap in that skill's own themed floating
+// number (see effects.showPoisonNumber/showPunchNumber) instead of the
+// generic one — each skill reads visually distinct at a glance, even
+// though the underlying HP loss works identically either way.
+async function damageCard(board, slotIndex, damage, attackerName, isSkillDamage = false, ignoreShield = false, isPoisonDamage = false, isPunchDamage = false) {
   const target = board[slotIndex];
   if (!target) return;
 
@@ -1449,7 +1548,7 @@ async function damageCard(board, slotIndex, damage, attackerName, isSkillDamage 
 
   let remainingDamage = damage;
 
-  if (target.shield > 0) {
+  if (target.shield > 0 && !ignoreShield) {
     const absorbed = Math.min(target.shield, remainingDamage);
     target.shield -= absorbed;
     remainingDamage -= absorbed;
@@ -1457,11 +1556,19 @@ async function damageCard(board, slotIndex, damage, attackerName, isSkillDamage 
     log(`${target.name} חסם ${absorbed} נזק עם המגן.`);
     render();
     await effects.wait(250);
+  } else if (target.shield > 0 && ignoreShield) {
+    log(`המגן של ${target.name} לא עזר הפעם — ${attackerName} עוקף מגנים!`);
   }
 
   if (slotElement && remainingDamage > 0) {
     effects.shakeCard(slotElement);
-    effects.showDamageNumber(slotElement, remainingDamage);
+    if (isPoisonDamage) {
+      effects.showPoisonNumber(slotElement, remainingDamage);
+    } else if (isPunchDamage) {
+      effects.showPunchNumber(slotElement, remainingDamage);
+    } else {
+      effects.showDamageNumber(slotElement, remainingDamage);
+    }
 
     // The generic per-skill chime already plays in skills.js whenever a
     // skill activates, so we only play the combat "Hit" sound for real
@@ -1530,6 +1637,8 @@ function exitBattle() {
 
   if (currentBattleConfig?.isCampaign) {
     window.CampaignUI.exitToLocationMap();
+  } else if (currentBattleConfig?.isDungeon) {
+    window.DungeonUI.exitToDungeonList();
   } else {
     window.UI.showScreen("homeScreen");
   }
@@ -1563,6 +1672,42 @@ function checkGameOver() {
         rewards: { granted },
         continueLabel: "שחק שוב",
         onHome: () => window.UI.showScreen("homeScreen")
+      });
+    } else if (won && currentBattleConfig?.isDungeon) {
+      // Repeatable, like Quick Battle — NOT a one-time Campaign stage.
+      // Rewards are a fixed list on the boss itself (see
+      // dungeon-bosses.js), granted fresh on every win, since the whole
+      // point of Dungeon is retrying with a better deck/strategy.
+      const granted = window.Progression.grantRewards(currentBattleConfig.rewards || []);
+      effects.showGameEndScreen(true, () => window.startBattle(currentBattleConfig), {
+        rewards: { granted },
+        continueLabel: "שחק שוב",
+        onHome: () => window.UI.showScreen("homeScreen")
+      });
+    } else if (won && currentBattleConfig?.isTutorial) {
+      // The tutorial's own scripted teaching already finished earlier
+      // (tutorialCompletionPending set by Tutorial's onComplete) — this
+      // is the REAL end of the battle itself (the AI actually defeated,
+      // not just the scripted steps done). The player sees a normal win
+      // screen first, and only continuing past IT chains into the
+      // rewards/guide flow — never before, and never instead of it.
+      effects.showGameEndScreen(true, () => {
+        if (tutorialCompletionPending) {
+          tutorialCompletionPending = false;
+          runTutorialCompletionFlow();
+        } else {
+          window.UI.showScreen("homeScreen");
+        }
+      }, {
+        continueLabel: "המשך",
+        onHome: () => {
+          if (tutorialCompletionPending) {
+            tutorialCompletionPending = false;
+            runTutorialCompletionFlow();
+          } else {
+            window.UI.showScreen("homeScreen");
+          }
+        }
       });
     } else {
       // Any loss (campaign or quick battle) — "try again" retries the
@@ -1623,12 +1768,21 @@ document.getElementById("tutorialSkipLink").addEventListener("click", () => {
 document.addEventListener("click", event => {
   const slot = event.target.closest(".skill-slot");
   if (!slot) return;
-  showSkillInfoPopup(slot.dataset.skillType, slot.dataset.skillValue);
+  showSkillInfoPopup(slot.dataset.skillType, slot.dataset.skillValue, !!slot.dataset.skillPierce);
 });
 
-function showSkillInfoPopup(skillType, scaledValue) {
+function showSkillInfoPopup(skillType, scaledValue, isPiercing = false) {
   const info = skills.SKILL_INFO?.[skillType];
   if (!info) return;
+
+  // Piercing is a PER-COMBO choice (see combos.js's ignoresShield), not
+  // something every card with this skill type has — so this note only
+  // shows when the specific card tapped actually carries it, appended
+  // to the normal description rather than baked into SKILL_INFO itself
+  // (which would incorrectly claim EVERY use of this skill pierces).
+  const pierceNoteHtml = isPiercing
+    ? `<div class="skill-info-pierce-note">🗡️ הסקיל הזה מתעלם ממגן (Shield)!</div>`
+    : "";
 
   const backdrop = document.createElement("div");
   backdrop.className = "choose-modal-backdrop skill-info-backdrop";
@@ -1636,6 +1790,7 @@ function showSkillInfoPopup(skillType, scaledValue) {
     <div class="choose-modal skill-info-modal">
       <div class="choose-modal-title">${info.name}</div>
       <div class="skill-info-desc">${info.description(scaledValue)}</div>
+      ${pierceNoteHtml}
     </div>
   `;
 
@@ -1659,7 +1814,7 @@ function showTutorialOverlay(step, onContinue) {
   backdrop.innerHTML = `
     <div class="choose-modal tutorial-overlay-modal">
       <div class="choose-modal-title">${step.title}</div>
-      <div class="tutorial-overlay-text">${step.text}</div>
+      <div class="tutorial-overlay-text"></div>
       <div class="upgrade-confirm-buttons">
         <button type="button" class="tutorial-skip-btn">דלג על המדריך</button>
         <button type="button" class="upgrade-confirm-ok">המשך</button>
@@ -1667,6 +1822,11 @@ function showTutorialOverlay(step, onContinue) {
     </div>
   `;
   document.body.appendChild(backdrop);
+
+  // Typed in rather than appearing all at once — tapping "המשך" mid-type
+  // just moves on immediately (typewriterText resolves early once the
+  // backdrop is removed from the page), so it never blocks the player.
+  effects.typewriterText(backdrop.querySelector(".tutorial-overlay-text"), step.text);
 
   backdrop.querySelector(".upgrade-confirm-ok").onclick = () => {
     backdrop.remove();
@@ -1683,8 +1843,8 @@ function showTutorialOverlay(step, onContinue) {
 function showTutorialInstructionBanner(text) {
   const banner = document.getElementById("tutorialInstructionBanner");
   if (!banner) return;
-  banner.querySelector(".tutorial-instruction-text").innerText = text;
   banner.classList.remove("hidden");
+  effects.typewriterText(banner.querySelector(".tutorial-instruction-text"), text, 16);
 }
 
 function hideTutorialInstructionBanner() {
@@ -1698,27 +1858,58 @@ function hideTutorialInstructionBanner() {
 // Quick Battle at the easiest difficulty — a smooth "now go" instead of
 // leaving the player to figure out the next step themselves.
 async function runTutorialCompletionFlow() {
+  // isFirstTimeTutorial was captured back when THIS battle started (see
+  // startGame) — by now hasSeenTutorial has already flipped true
+  // regardless (tutorial.js's finish() sets it as soon as the scripted
+  // steps complete), so re-checking shouldShowTutorial() here would
+  // incorrectly treat every completion as a replay. Only a genuine
+  // first-time completion grants the welcome-kit rewards — replaying
+  // via "🎓 הפעל את המדריך" in How To Play still walks through the
+  // whole battle again, just without handing out the same coins/RP/
+  // items every single time.
+  const isFirstTime = currentBattleConfig?.isFirstTimeTutorial !== false;
+
+  if (isFirstTime) {
+    // The tutorial's own "welcome kit" — a real, meaningful first grant
+    // of Research Points specifically (starting balance is 0 now, see
+    // progression.js), plus an item that combos with SIX different
+    // characters (המבורגר — every player already owns all 12 character
+    // instances from the start, so at least one of those combos is
+    // immediately researchable with this exact reward, no extra
+    // shopping needed). The extra אופק טלקר copy exists purely to set
+    // up a genuine mergeable pair (same character, same level 1) for
+    // the Deck guide below — without it, a brand new player owns
+    // exactly one of each character and has nothing real to merge yet.
+    const granted = window.Progression.grantRewards([
+      { type: "coins", amount: 100 },
+      { type: "researchPoints", amount: 500 },
+      { type: "unlockItem", item: "המבורגר" },
+      { type: "characterCopy", character: "אופק טלקר" }
+    ]);
+
+    await showSimpleTutorialModal(
+      "🎉 כל הכבוד!",
+      `סיימתם את המדריך! קיבלתם 💰${granted.coins} מטבעות, 🧬${granted.researchPoints} נקודות מחקר, 🍔 המבורגר חדש, ועוד עותק של אופק טלקר.`
+    );
+  } else {
+    await showSimpleTutorialModal(
+      "🎉 כל הכבוד!",
+      "סיימתם לעבור על המדריך שוב! הבונוסים כבר ניתנו בפעם הראשונה, אז הפעם זה היה סתם לתרגול."
+    );
+  }
+
   await showSimpleTutorialModal(
-    "🎉 כל הכבוד!",
-    "סיימת את המדריך! אפשר תמיד לחזור אליו דרך מסך HOW TO PLAY."
-  );
-  await showSimpleTutorialModal(
-    "בהצלחה! 💪",
-    "עכשיו תנסו בעצמכם — קרב אמיתי מתחיל."
+    "עוד שני דברים לפני שיוצאים לדרך 🎓",
+    "אפשר לחקור שילובים חדשים במעבדת המחקר (LAB), ואפשר למזג 2 עותקים זהים של אותה דמות כדי להעלות אותה רמה — ויש לכם בדיוק זוג כזה עכשיו. שני הכפתורים בתפריט הראשי יבהבו — תבדקו את שניהם, בסדר שנוח לכם."
   );
 
-  // Matches QUICK_BATTLE_DIFFICULTIES.easy in ui.js exactly (kept as a
-  // literal here rather than reaching into ui.js's internals — this is
-  // the one specific, stable config the tutorial's own auto-start needs).
-  window.startBattle({
-    isQuickBattle: true,
-    enemyLevel: 1,
-    rewardConfig: {
-      key: "easy", label: "קל", emoji: "🟢", enemyLevel: 1,
-      coinsMin: 5, coinsMax: 15, bonusChance: 0.20, bonusType: "item",
-      researchMin: 10, researchMax: 20
-    }
-  });
+  // Not straight into another battle this time — the point now is
+  // exploring these two systems. Both guides run independently and
+  // simultaneously (see ui.js) — the player can open either first;
+  // each one clears its own highlight once actually used.
+  window.UI.showScreen("homeScreen");
+  window.UI.startLabGuide();
+  window.UI.startDeckMergeGuide("אופק טלקר");
 }
 
 function showSimpleTutorialModal(title, text) {
@@ -1728,13 +1919,14 @@ function showSimpleTutorialModal(title, text) {
     backdrop.innerHTML = `
       <div class="choose-modal tutorial-overlay-modal">
         <div class="choose-modal-title">${title}</div>
-        <div class="tutorial-overlay-text">${text}</div>
+        <div class="tutorial-overlay-text"></div>
         <div class="upgrade-confirm-buttons">
           <button type="button" class="upgrade-confirm-ok tutorial-continue-full">המשך</button>
         </div>
       </div>
     `;
     document.body.appendChild(backdrop);
+    effects.typewriterText(backdrop.querySelector(".tutorial-overlay-text"), text);
     backdrop.querySelector(".upgrade-confirm-ok").onclick = () => {
       backdrop.remove();
       resolve();

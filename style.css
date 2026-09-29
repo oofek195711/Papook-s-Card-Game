@@ -43,8 +43,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 6px;
+  gap: 9px;
+  padding: 8px;
   background:
     radial-gradient(circle at 50% 15%, rgba(255, 217, 102, 0.12), transparent 40%),
     linear-gradient(rgba(5, 8, 15, .55), rgba(5, 8, 15, .75)),
@@ -55,9 +55,9 @@ body {
 
 .home-title {
   position: relative;
-  margin: 0 0 4px;
-  padding: 6px 28px;
-  font-size: clamp(15px, 4vw, 23px);
+  margin: 0 0 6px;
+  padding: 7px 30px;
+  font-size: clamp(17px, 4.4vw, 25px);
   font-weight: 900;
   letter-spacing: .5px;
   color: #fff3d0;
@@ -100,9 +100,9 @@ body {
 .home-btn {
   flex: 0 0 auto;
   width: min(78vw, 300px);
-  padding: 6px 16px;
+  padding: 8px 18px;
   font-family: inherit;
-  font-size: clamp(11px, 2.8vw, 14px);
+  font-size: clamp(13px, 3.2vw, 16px);
   font-weight: 900;
   letter-spacing: .3px;
   border: 2px solid #d4af37;
@@ -140,15 +140,6 @@ body {
   border-color: #7fe0a0;
 }
 
-.home-btn.campaign {
-  border-color: #b98cff;
-}
-
-.home-btn.campaign.locked {
-  opacity: .55;
-  filter: grayscale(.4);
-}
-
 .home-flash-message {
   position: fixed;
   bottom: max(16px, env(safe-area-inset-bottom));
@@ -171,6 +162,71 @@ body {
 @keyframes homeFlashPopIn {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.game-modes-list {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 16px;
+}
+
+/* A fairly tall tile (not the whole screen, but a substantial chunk of
+   it) per mode — each one its own themed background image/gradient,
+   darkened so the title text stays readable over any art. */
+.game-mode-tile {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 260px;
+  height: 88%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 10px;
+  border: 3px solid #d4af37;
+  border-radius: 18px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #05070d, 0 0 16px rgba(212, 175, 55, .3);
+}
+
+.game-mode-tile:active {
+  transform: scale(.97);
+}
+
+.game-mode-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.15) 30%, rgba(0,0,0,.8));
+}
+
+.game-mode-title {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(15px, 3.8vw, 22px);
+  font-weight: 900;
+  color: #ffe066;
+  text-shadow: 0 0 10px rgba(255, 217, 102, .6), 2px 2px 0 #000;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.game-mode-quickmatch {
+  background-image: url("../images/Background_QuickMatch.png");
+}
+
+.game-mode-dungeon {
+  background-image: url("../images/Background_Dungeon.png");
+}
+
+.game-mode-campaign {
+  background-image: url("neighborhood-background.jpg");
 }
 
 .home-btn.howto {
@@ -336,6 +392,127 @@ body {
   border-color: #1c9e46;
 }
 
+.world-select-list {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.world-select-tile {
+  flex: 0 0 auto;
+  width: min(42vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid #d4af37;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1c2b4a, #0a1120);
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #05070d, 0 0 12px rgba(212, 175, 55, .25);
+}
+
+.world-select-tile:active:not([disabled]) {
+  transform: scale(.97);
+}
+
+.world-select-tile[disabled] {
+  cursor: default;
+  opacity: .6;
+  filter: grayscale(.5);
+}
+
+.world-select-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.15);
+  overflow: hidden;
+}
+
+.world-select-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.55);
+  font-size: clamp(22px, 6vw, 32px);
+}
+
+.world-select-done-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(46, 204, 113, .9);
+  color: #06210f;
+  font-weight: 900;
+  font-size: clamp(9px, 2.2vw, 11px);
+}
+
+.world-select-name {
+  font-weight: 900;
+  color: #ffe066;
+  font-size: clamp(12px, 3vw, 15px);
+  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
+  text-align: center;
+}
+
+.world-select-locked-hint {
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: #999;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.dungeon-tile {
+  flex: 0 0 auto;
+  width: min(80vw, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border: 2px solid #d4af37;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #2a1520, #14060c);
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #05070d, 0 0 12px rgba(212, 175, 55, .25);
+}
+
+.dungeon-tile:active {
+  transform: scale(.97);
+}
+
+.dungeon-tile-icon {
+  font-size: clamp(28px, 7vw, 40px);
+}
+
+.dungeon-tile-name {
+  font-weight: 900;
+  color: #ffe066;
+  font-size: clamp(13px, 3.2vw, 16px);
+  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
+  text-align: center;
+}
+
+.dungeon-tile .boss-hint-box {
+  margin: 4px 0 0;
+}
+
 .campaign-map {
   position: relative;
   flex: 1 1 auto;
@@ -343,6 +520,19 @@ body {
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 217, 74, 0.10), transparent 40%),
     linear-gradient(#1d4a42, #0c211d);
+}
+
+.boss-hint-box {
+  flex: 0 0 auto;
+  margin: 6px 10px 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 217, 74, .5);
+  background: rgba(0,0,0,.35);
+  color: #ffe066;
+  font-size: clamp(10px, 2.6vw, 12px);
+  font-style: italic;
+  text-align: center;
 }
 
 /* A location's own background photo (see campaign.js's
@@ -1469,6 +1659,28 @@ body {
   border: 1px solid #151515;
 }
 
+/* Marks a skill that bypasses Shield (see combos.js's ignoresShield) —
+   visible right on the card, not just in the tap-to-explain tooltip. */
+.skill-pierce-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 8px;
+  filter: drop-shadow(0 0 2px #000);
+}
+
+.skill-info-pierce-note {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 217, 74, .15);
+  border: 1px solid rgba(255, 217, 74, .5);
+  color: #ffd94a;
+  font-size: clamp(10px, 2.4vw, 12px);
+  font-weight: bold;
+  text-align: center;
+}
+
 /* Fusion cards' skills get a subtle purple glow to set them apart —
    purely visual, keyed off the existing .fusion-card class already on
    the card element, no change to skill logic/behavior itself. */
@@ -2127,6 +2339,90 @@ body {
 @keyframes healFloat {
   from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   to { opacity: 0; transform: translate(-50%, -120%) scale(1.45); }
+}
+
+.rage-number {
+  position: fixed;
+  z-index: 60000;
+  pointer-events: none;
+  color: #ff8c1a;
+  font-size: clamp(20px, 4.6vw, 34px);
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000;
+  animation: healFloat calc(.8s / var(--fx-speed)) forwards;
+}
+
+.poison-number {
+  position: fixed;
+  z-index: 60000;
+  pointer-events: none;
+  color: #7dff4a;
+  font-size: clamp(20px, 4.6vw, 34px);
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000;
+  animation: damageFloat calc(.8s / var(--fx-speed)) forwards;
+}
+
+/* Punch's own theme — "dark mustard yellow" as requested, distinct
+   from both the generic red damage number and poison's green. */
+.punch-number {
+  position: fixed;
+  z-index: 60000;
+  pointer-events: none;
+  color: #b8860b;
+  font-size: clamp(20px, 4.6vw, 34px);
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000;
+  animation: damageFloat calc(.8s / var(--fx-speed)) forwards;
+}
+
+.punch-chips-projectile {
+  position: fixed;
+  z-index: 60000;
+  pointer-events: none;
+  font-size: 28px;
+  transform: translate(-50%, -50%);
+  animation: chipsThrow calc(.45s / var(--fx-speed)) ease-in forwards;
+}
+
+@keyframes chipsThrow {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--throw-dx)), calc(-50% + var(--throw-dy))) rotate(420deg) scale(.8);
+    opacity: 1;
+  }
+}
+
+/* Weakness's own themed "impact" mark — a colored stain/splash right
+   over the card, whichever weakness item triggered it (see
+   effects.showWeaknessEffect / WEAKNESS_VISUALS for the per-item
+   color+icon). Sized and positioned to exactly cover the target card
+   itself (not just a floating icon), like something actually landed
+   on it. */
+.weakness-splash {
+  position: fixed;
+  z-index: 59500;
+  pointer-events: none;
+  border-radius: 8px;
+  background: radial-gradient(circle at 35% 30%, var(--splash-color), transparent 72%);
+  display: grid;
+  place-items: center;
+  animation: weaknessSplashPop calc(.9s / var(--fx-speed)) ease-out forwards;
+}
+
+.weakness-splash-icon {
+  font-size: 30px;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,.85));
+}
+
+@keyframes weaknessSplashPop {
+  0% { opacity: 0; transform: scale(.6); }
+  25% { opacity: 1; transform: scale(1.08); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
 }
 
 .hand.locked {
@@ -2816,12 +3112,6 @@ body {
   font-size: 14px;
 }
 
-.research-combo-name {
-  font-weight: bold;
-  color: #fff;
-  font-size: clamp(11px, 2.8vw, 13px);
-}
-
 .research-confirm-modal {
   width: min(84vw, 300px);
   text-align: center;
@@ -2836,6 +3126,43 @@ body {
   color: #ffd94a;
   font-weight: bold;
   margin-bottom: 6px;
+}
+
+.speedup-qty-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.speedup-qty-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #bd18ff;
+  background: linear-gradient(#e79bff, #bd18ff);
+  color: #2a0033;
+  font-size: 18px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.speedup-qty-btn:disabled {
+  opacity: .4;
+  cursor: default;
+  background: rgba(255,255,255,.08);
+  border-color: #444;
+  color: #888;
+}
+
+.speedup-qty-value {
+  min-width: 28px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffe066;
 }
 
 .research-timer {
@@ -3030,6 +3357,13 @@ body {
   font-weight: bold;
 }
 
+.research-tile-blocked-reason {
+  margin-top: 3px;
+  font-size: clamp(8px, 2vw, 10px);
+  color: #ff8c8c;
+  font-weight: bold;
+}
+
 .research-tile-btn {
   margin-top: 2px;
   width: 100%;
@@ -3054,6 +3388,94 @@ body {
   color: #888;
   background: rgba(255,255,255,.05);
   cursor: default;
+}
+
+/* The claim-moment orbit/merge animation — see ui.js's
+   rlShowFusionOrbitAnimation. Two cards visibly circle each other
+   (each in its own counter-rotating wrapper so the card image itself
+   stays upright rather than tumbling), starting slow and accelerating
+   (ease-in), then a bright radial flash marks the "merge" moment right
+   as the spin finishes — timed via the flash's own animation-delay,
+   not JS, so the two phases always line up regardless of frame rate. */
+.fusion-orbit-backdrop {
+  background: rgba(0,0,0,.75);
+}
+
+.fusion-orbit-stage {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+}
+
+.fusion-claim-orbit {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  animation: fusionOrbitSpin 1.6s ease-in forwards;
+}
+
+/* Each card's own wrapper is offset from the orbit's center (top/bottom
+   edge, not inset:0) — that offset is what makes it actually move in
+   an arc when the OUTER .fusion-claim-orbit rotates. Its own
+   counter-rotation then spins it back around ITS OWN local center
+   (not the orbit's), keeping the image upright without cancelling out
+   the orbital motion itself. (An earlier version had this wrapper at
+   inset:0 — same size/center as the outer orbit — which made the two
+   equal-and-opposite rotations share one pivot and cancel to a
+   completely static image.) */
+.orbit-item {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  left: 50%;
+  margin-left: -32px;
+  animation: fusionCounterSpin 1.6s ease-in forwards;
+}
+
+.orbit-a {
+  top: 0;
+}
+
+.orbit-b {
+  bottom: 0;
+}
+
+.fusion-orbit-card {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #ffd94a;
+  box-shadow: 0 0 12px rgba(255, 217, 74, .7);
+}
+
+@keyframes fusionOrbitSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(1080deg); }
+}
+
+@keyframes fusionCounterSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-1080deg); }
+}
+
+.fusion-claim-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,1), rgba(255,217,74,.9) 40%, transparent 72%);
+  opacity: 0;
+  animation: fusionClaimFlash .5s ease-out forwards;
+  animation-delay: 1.55s;
+  pointer-events: none;
+}
+
+@keyframes fusionClaimFlash {
+  0% { opacity: 0; transform: scale(.2); }
+  40% { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(2.4); }
 }
 
 .research-claim-modal {
@@ -3095,24 +3517,30 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 6px 12px;
-  background: linear-gradient(90deg, #2a2008, #14100290, #2a2008);
-  border-bottom: 2px solid #ffd94a;
-  box-shadow: 0 2px 10px rgba(255, 217, 74, .3);
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #3a2f0a, #1a1400, #3a2f0a);
+  border-bottom: 3px solid #ffd94a;
+  box-shadow: 0 0 20px rgba(255, 217, 74, .5), 0 4px 14px rgba(0,0,0,.6);
+}
+
+.tutorial-instruction-icon {
+  flex: 0 0 auto;
+  font-size: clamp(18px, 4.6vw, 26px);
+  animation: tutorialPointBounce 1s ease-in-out infinite;
+}
+
+@keyframes tutorialPointBounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-6px); }
 }
 
 .tutorial-instruction-text {
-  color: #ffe066;
+  color: #fff3d0;
   font-weight: 900;
-  font-size: clamp(11px, 2.8vw, 14px);
-  text-shadow: 0 0 6px rgba(255, 217, 102, .5);
-  animation: tutorialTextPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes tutorialTextPulse {
-  0%, 100% { opacity: .85; }
-  50% { opacity: 1; }
+  font-size: clamp(13px, 3.4vw, 17px);
+  text-shadow: 0 0 8px rgba(255, 217, 102, .7), 1px 1px 0 #000;
+  min-height: 1.3em;
 }
 
 .tutorial-skip-link {
@@ -3163,6 +3591,20 @@ body {
 
 .slot.tutorial-highlight {
   animation: tutorialHighlightPulse 1.1s ease-in-out infinite;
+}
+
+/* Reused for the post-tutorial Lab guide (see ui.js's startLabGuide) —
+   same pulsing glow language, just on a Home screen button instead of
+   a battle card/slot. */
+.home-btn.tutorial-highlight {
+  animation: tutorialHighlightPulse 1.1s ease-in-out infinite;
+}
+
+/* Same glow again, for the Deck guide's two specific mergeable tiles
+   (see ui.js's startDeckMergeGuide / dbCharacterTileHtml). */
+.db-tile.tutorial-highlight {
+  animation: tutorialHighlightPulse 1.1s ease-in-out infinite;
+  z-index: 3;
 }
 
 @keyframes tutorialHighlightPulse {

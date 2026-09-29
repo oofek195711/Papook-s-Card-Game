@@ -54,15 +54,29 @@ window.WeaknessEngine = (() => {
   register("damage", async ctx => {
     const { facingCard, weakness, defenderOwner, defenderBoard, slotIndex, effects, render, log, damageCard, sound } = ctx;
 
+    // A PERCENTAGE of the target's own max HP, not a flat number —
+    // this is what keeps a Weakness genuinely competitive against
+    // "just build the biggest fused stats" at ANY point in the game,
+    // not just early on when HP totals were still small. Rounded UP
+    // (Math.ceil) and floored at 1, so it's never a suspicious "0
+    // damage" against something with very little max HP.
+    const damageAmount = Math.max(1, Math.ceil(facingCard.maxHp * (weakness.percentOfMaxHp / 100)));
+
     log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! הפגיעה פוגעת בו ישירות.`);
     effects.showSkillBadge(defenderOwner, slotIndex, "⚠️", "חולשה!");
+
+    const targetElement = document.querySelector(
+      `.slot[data-owner="${defenderOwner}"][data-index="${slotIndex}"] .card`
+    );
+    if (targetElement) effects.showWeaknessEffect(targetElement, weakness.item);
+
     sound?.playSkill();
     render();
     await effects.wait(400);
 
     // isSkillDamage=true so damageCard doesn't also play the combat
     // "Hit" sound — the weakness chime above already covers it.
-    await damageCard(defenderBoard, slotIndex, weakness.value, weakness.item, true);
+    await damageCard(defenderBoard, slotIndex, damageAmount, weakness.item, true);
   });
 
   register("stun", async ctx => {
@@ -72,6 +86,12 @@ window.WeaknessEngine = (() => {
 
     log(`⚠️ ${weakness.item} היא חולשה של ${facingCard.name}! הוא מסונוור.`);
     effects.showSkillBadge(defenderOwner, slotIndex, "😵", "חולשה!");
+
+    const targetElement = document.querySelector(
+      `.slot[data-owner="${defenderOwner}"][data-index="${slotIndex}"] .card`
+    );
+    if (targetElement) effects.showWeaknessEffect(targetElement, weakness.item);
+
     sound?.playSkill();
     render();
     await effects.wait(400);

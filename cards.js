@@ -6,20 +6,28 @@ window.CardData = (() => {
       // effect TYPE the stun skill already uses, resolved by the SAME
       // registered "stun" resolver in weaknesses.js, no new effect type
       // needed.
-      weaknesses: [{ item: "שעון", effect: "stun" }]
+      weaknesses: [{ item: "שעון", effect: "stun" }],
+      // Riddle-style hint shown before fighting this boss (see
+      // campaign.js's renderLocationMap) — teases the weakness without
+      // naming the item outright, so figuring it out (and packing the
+      // right counter) is still a real bit of thinking, not a spoiler.
+      weaknessHint: "אור אף פעם לא רוצה לדעת מה השעה..."
     },
     { name: "אופק טלקר", type: "character", hp: 20, atk: 6, image: "../images/ofek.png" },
     {
       name: "דור טלקר", type: "character", hp: 13, atk: 9, image: "../images/dor.png",
-      weaknesses: [{ item: "חתול", effect: "damage", value: 4 }]
+      weaknesses: [{ item: "חתול", effect: "damage", percentOfMaxHp: 30 }],
+      weaknessHint: "דור לא יכול לראות את החיה הזאת..."
     },
     {
       name: "עומר שמואלי", type: "character", hp: 14, atk: 10, image: "../images/omer.png",
-      weaknesses: [{ item: "קטשופ", effect: "damage", value: 4 }]
+      weaknesses: [{ item: "קטשופ", effect: "damage", percentOfMaxHp: 30 }],
+      weaknessHint: "מה עומר שונא?"
     },
     {
       name: "תמר גולן", type: "character", hp: 15, atk: 8, image: "../images/tamar.png",
-      weaknesses: [{ item: "דגדוגים", effect: "damage", value: 4 }]
+      weaknesses: [{ item: "דגדוגים", effect: "damage", percentOfMaxHp: 30 }],
+      weaknessHint: "נסו לחשוב - למה תמר רגישה ממש?"
     },
 
     // New characters
@@ -70,7 +78,9 @@ window.CardData = (() => {
 
     // New items
     { name: "המבורגר", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/hamburger.png" },
-    { name: "ספה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/sofa.png" }
+    { name: "ספה", type: "item", atkBonus: 1, hpBonus: 3, image: "../images/Soffa.png" },
+    { name: "יין", type: "item", atkBonus: 2, hpBonus: 2, image: "../images/Wine.png" },
+    { name: "בעל הבית", type: "item", atkBonus: 2, hpBonus: 3, image: "../images/BaalHabait.png" }
   ];
 
   /*
@@ -93,7 +103,13 @@ window.CardData = (() => {
                    onFusion cards already on the board don't re-trigger)
 
     Weaknesses use this structure (array, a character can have several):
-    weaknesses: [{ item: "קטשופ", effect: "damage", value: 4 }]
+    weaknesses: [{ item: "קטשופ", effect: "damage", percentOfMaxHp: 30 }]
+    ("damage" scales with the TARGET's own max HP — percentOfMaxHp:30
+    means 30% of it, rounded up, min 1 — so it stays meaningful whether
+    the target is a fresh level-1 card or a heavily-boosted boss, not a
+    flat number that mattered early on and became trivial later.
+    "stun" ignores this field entirely — it has no magnitude, it's
+    binary.)
 
     UNLIKE skills, a weakness is triggered by the OPPONENT: if they place
     (or fuse) a card carrying that item name directly in the lane facing

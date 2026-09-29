@@ -29,7 +29,15 @@ window.UI = (() => {
     },
     campaignWorldScreen: {
       title: "🗺️ קמפיין",
-      text: "מסע דרך \"השכונה\" נגד 5 בוסים, כל אחד עם חוקים משלו. כל שלב שמנצחים נותן מטבעות, ולפעמים גם פריטים או עותקי דמויות חדשים."
+      text: "מסע דרך העולם הזה נגד כמה בוסים, כל אחד עם חוקים משלו. כל שלב שמנצחים נותן מטבעות, ולפעמים גם פריטים או עותקי דמויות חדשים."
+    },
+    worldSelectScreen: {
+      title: "🌍 בחירת קמפיין",
+      text: "כאן בוחרים איזה עולם קמפיין לשחק בו. עולמות נוספים נפתחים אחרי שמשלימים את העולם שלפניהם — רואים אותם, אבל לא נכנסים אליהם עד אז."
+    },
+    dungeonScreen: {
+      title: "🛡️ מרתף (Dungeon)",
+      text: "קרבות בוס אסטרטגיים, נפרדים לגמרי מהקמפיין — תמיד פתוחים, אין צורך להתקדם בשום מקום כדי להגיע אליהם. כל בוס דורש להבין את המכניקה שלו ולבנות חפיסה שמתאימה אליה, לא רק חפיסה הכי חזקה שיש. אפשר לנסות כמה פעמים שרוצים."
     }
   };
 
@@ -59,6 +67,45 @@ window.UI = (() => {
     };
   }
 
+  // Post-tutorial guided walkthrough into the Research Lab — see
+  // script.js's runTutorialCompletionFlow, which calls startLabGuide()
+  // right after granting the tutorial's completion rewards. Not part of
+  // tutorial.js itself (that module is purpose-built around BATTLE
+  // steps) — this is a much lighter, separate flag just for
+  // highlighting the LAB button once and showing one follow-up overlay
+  // once the player actually gets there.
+  let labGuideActive = false;
+
+  function startLabGuide() {
+    labGuideActive = true;
+    applyLabGuideHighlight();
+  }
+
+  function applyLabGuideHighlight() {
+    document.getElementById("goResearchLabBtn")?.classList.toggle("tutorial-highlight", labGuideActive);
+  }
+
+  // Same idea as the Lab guide above, chained right after it — see
+  // script.js's runTutorialCompletionFlow. Highlights MY DECK on Home;
+  // once actually opened, ALSO highlights the specific two mergeable
+  // instances the tutorial reward set up (see getInstancesByCardName
+  // usage in applyDeckMergeGuideHighlight) rather than just pointing at
+  // the screen in general. Clears itself the moment a real merge
+  // actually happens (see dbHandleTap), not after a fixed number of
+  // screen visits.
+  let deckMergeGuideActive = false;
+  let deckMergeGuideCharacterName = null;
+
+  function startDeckMergeGuide(characterName) {
+    deckMergeGuideActive = true;
+    deckMergeGuideCharacterName = characterName;
+    applyDeckMergeGuideHighlight();
+  }
+
+  function applyDeckMergeGuideHighlight() {
+    document.getElementById("goDeckBtn")?.classList.toggle("tutorial-highlight", deckMergeGuideActive);
+  }
+
   function showScreen(id) {
     document.querySelectorAll(".home-screen, .sub-screen, #battleScreen")
       .forEach(el => el.classList.add("hidden"));
@@ -86,20 +133,9 @@ window.UI = (() => {
     }
 
     if (id === "homeScreen") {
-      updateCampaignLockState();
+      applyLabGuideHighlight();
+      applyDeckMergeGuideHighlight();
     }
-  }
-
-  // Visually reflects whether Campaign is actually reachable right now
-  // — same flag as the click-time check in the button's own listener,
-  // just updated every time the Home screen is shown (including right
-  // after finishing/skipping the tutorial) so it's never stale.
-  function updateCampaignLockState() {
-    const btn = document.getElementById("goCampaignBtn");
-    if (!btn) return;
-    const locked = window.Progression.shouldShowTutorial();
-    btn.classList.toggle("locked", locked);
-    btn.innerHTML = locked ? "🔒 CAMPAIGN" : "🗺️ CAMPAIGN";
   }
 
   // A brief, self-dismissing toast — for quick feedback on the Home
@@ -418,9 +454,9 @@ window.UI = (() => {
             <img src="${itemCard.image}" class="research-mini-img" alt="${itemCard.name}">
           </div>
           <div class="research-arrow">↓</div>
-          <div class="research-result-card">
-            <img src="${combo.image}" class="research-result-img" alt="${combo.name}">
-            <div class="research-result-name">${combo.name}</div>
+          <div class="research-result-card mystery">
+            <div class="research-mystery-icon">🎁</div>
+            <div class="research-result-name">???</div>
           </div>
           <button type="button" id="claimResearchBtn" class="research-claim-btn">CLAIM FUSION</button>
         </div>
@@ -440,7 +476,6 @@ window.UI = (() => {
           <span class="research-plus">+</span>
           <img src="${itemCard.image}" class="research-mini-img" alt="${itemCard.name}">
         </div>
-        <div class="research-combo-name">${combo.name}</div>
         <div id="researchTimerDisplay" class="research-timer">⏱️ ${rlFormatDuration(active.finishAt - Date.now())}</div>
         ${charges > 0
           ? `<button type="button" id="useSpeedupBtn" class="research-speedup-use-btn">⏩ השתמש בקיצור (יש לך: ${charges})</button>`
@@ -455,14 +490,22 @@ window.UI = (() => {
 
   function rlHandleUseSpeedup() {
     const P = window.Progression;
-    const charges = P.getResearchSpeedupCharges();
+    const maxCharges = P.getResearchSpeedupCharges();
+    if (maxCharges <= 0) return;
+
+    let qty = 1;
 
     const backdrop = document.createElement("div");
     backdrop.className = "choose-modal-backdrop";
     backdrop.innerHTML = `
       <div class="choose-modal research-confirm-modal">
-        <div class="choose-modal-title">להשתמש בקיצור?</div>
-        <div class="research-confirm-cost">−${P.RESEARCH_SPEEDUP_MINUTES} דקות &nbsp;·&nbsp; נותרו לך: ${charges}</div>
+        <div class="choose-modal-title">להשתמש בקיצורים?</div>
+        <div class="research-confirm-cost" id="speedupPreviewText"></div>
+        <div class="speedup-qty-stepper">
+          <button type="button" id="speedupQtyMinus" class="speedup-qty-btn">−</button>
+          <span id="speedupQtyValue" class="speedup-qty-value"></span>
+          <button type="button" id="speedupQtyPlus" class="speedup-qty-btn">+</button>
+        </div>
         <div class="upgrade-confirm-buttons">
           <button type="button" class="upgrade-confirm-cancel">ביטול</button>
           <button type="button" class="upgrade-confirm-ok">השתמש</button>
@@ -471,11 +514,35 @@ window.UI = (() => {
     `;
     document.body.appendChild(backdrop);
 
+    const qtyValueEl = backdrop.querySelector("#speedupQtyValue");
+    const previewEl = backdrop.querySelector("#speedupPreviewText");
+    const minusBtn = backdrop.querySelector("#speedupQtyMinus");
+    const plusBtn = backdrop.querySelector("#speedupQtyPlus");
+
+    function refresh() {
+      qtyValueEl.innerText = qty;
+      previewEl.innerText = `−${qty * P.RESEARCH_SPEEDUP_MINUTES} דקות סה"כ · נותרו לך: ${maxCharges}`;
+      minusBtn.disabled = qty <= 1;
+      plusBtn.disabled = qty >= maxCharges;
+    }
+    refresh();
+
+    minusBtn.onclick = () => { if (qty > 1) { qty -= 1; refresh(); } };
+    plusBtn.onclick = () => { if (qty < maxCharges) { qty += 1; refresh(); } };
+
     backdrop.querySelector(".upgrade-confirm-cancel").onclick = () => backdrop.remove();
     backdrop.querySelector(".upgrade-confirm-ok").onclick = () => {
       backdrop.remove();
-      const result = P.useSpeedupCharge();
-      if (result.success) rlRenderAll();
+
+      // One confirmation covers using several charges at once — loops
+      // the same single-charge function, stopping early if the research
+      // finishes partway through (nothing left to speed up) rather than
+      // blindly using all requested charges regardless.
+      for (let i = 0; i < qty; i++) {
+        const result = P.useSpeedupCharge();
+        if (!result.success) break;
+      }
+      rlRenderAll();
     };
   }
 
@@ -517,6 +584,22 @@ window.UI = (() => {
     const itemCard = cards.find(c => c.name === itemName);
     const check = P.canStartResearch(comboKey);
 
+    // The button alone being greyed out doesn't explain WHY — same
+    // "available" tile (owns character+item) can still be blocked by
+    // not enough Research Points yet, or a research already running in
+    // the single slot. Spelling that out here instead of leaving it
+    // silent is what actually needed fixing — the combo itself was
+    // never broken.
+    let blockedReasonHtml = "";
+    if (!check.canStart) {
+      if (check.reason === "points") {
+        const missing = check.cost - P.getResearchPoints();
+        blockedReasonHtml = `<div class="research-tile-blocked-reason">חסרים לך ${missing} 🧬</div>`;
+      } else if (check.reason === "slot-busy") {
+        blockedReasonHtml = `<div class="research-tile-blocked-reason">יש כבר מחקר פעיל</div>`;
+      }
+    }
+
     return `
       <div class="research-tile available" data-combo-key="${comboKey}">
         <div class="research-tile-status ready">🔬 AVAILABLE</div>
@@ -528,6 +611,7 @@ window.UI = (() => {
         <div class="research-tile-recipe">${characterName} + ${itemName}</div>
         <div class="research-tile-cost">🧬 ${combo.researchCost} &nbsp;·&nbsp; ⏱️ ${rlFormatDuration(combo.researchTime)}</div>
         <button type="button" class="research-tile-btn" ${check.canStart ? "" : "disabled"}>Research</button>
+        ${blockedReasonHtml}
       </div>
     `;
   }
@@ -574,7 +658,6 @@ window.UI = (() => {
           <span class="research-plus">+</span>
           <img src="${itemCard.image}" class="research-mini-img" alt="${itemName}">
         </div>
-        <div class="research-combo-name">${combo.name}</div>
         <div class="research-confirm-cost">🧬 ${combo.researchCost} &nbsp;·&nbsp; ⏱️ ${rlFormatDuration(combo.researchTime)}</div>
         <div class="upgrade-confirm-buttons">
           <button type="button" class="upgrade-confirm-cancel">ביטול</button>
@@ -618,8 +701,54 @@ window.UI = (() => {
     if (!result.success) return;
 
     const combo = combos[result.comboKey];
-    rlShowClaimCelebration(combo);
+    const baseCard = cards.find(c => c.name === rlCharacterName(result.comboKey));
+    const itemCard = cards.find(c => c.name === rlItemName(result.comboKey));
+
+    showOrbitMergeAnimation(baseCard, itemCard).then(() => {
+      rlShowClaimCelebration(combo);
+    });
     rlRenderAll();
+  }
+
+  // The "big reveal" moment for two cards becoming one — two ORBITING
+  // cards that start slow and accelerate, then a bright flash as they
+  // merge. Used for BOTH a claimed Fusion research (character + item)
+  // and a character merge-upgrade (same character twice) — takes any
+  // two card-like objects (just needs .image/.name), doesn't care which
+  // kind. Pure CSS for the spin itself (see style.css's
+  // fusionOrbitSpin/fusionCounterSpin — each orbiting card sits in its
+  // own wrapper that counter-rotates the same amount, so the card
+  // images stay upright while still visibly circling each other, rather
+  // than tumbling). Returns a Promise so the caller can wait for the
+  // whole sequence before showing the actual result.
+  function showOrbitMergeAnimation(cardA, cardB) {
+    return new Promise(resolve => {
+      const backdrop = document.createElement("div");
+      backdrop.className = "choose-modal-backdrop fusion-orbit-backdrop";
+      backdrop.innerHTML = `
+        <div class="fusion-orbit-stage">
+          <div class="fusion-claim-orbit">
+            <div class="orbit-item orbit-a">
+              <img src="${cardA.image}" class="fusion-orbit-card" alt="${cardA.name}">
+            </div>
+            <div class="orbit-item orbit-b">
+              <img src="${cardB.image}" class="fusion-orbit-card" alt="${cardB.name}">
+            </div>
+          </div>
+          <div class="fusion-claim-flash"></div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+
+      // Matches the orbit's own CSS animation-duration (1.6s) — the
+      // flash element's OWN animation-delay (see style.css) is timed to
+      // fire right as the orbit finishes, so this setTimeout just needs
+      // to cover both phases before cleaning up and resolving.
+      setTimeout(() => {
+        backdrop.remove();
+        resolve();
+      }, 2000);
+    });
   }
 
   function rlShowClaimCelebration(combo) {
@@ -686,8 +815,16 @@ window.UI = (() => {
 
   function fusionTileHtml(comboKey, combo) {
     const [characterName, itemName] = comboKey.split("|");
+    const P = window.Progression;
 
     if (isItemLocked(itemName)) return mysteryTileHtml();
+
+    // Owning the item isn't the same as having actually researched this
+    // specific combo (see progression.js's Fusion Research system) —
+    // showing the name/image/stats here before that would spoil the
+    // same surprise the Lab's own claim flow is built around. Falls
+    // through to the SAME mystery treatment as a genuinely locked item.
+    if (!P.isFusionResearched(comboKey)) return mysteryTileHtml();
 
     const statsHtml = `<div class="collection-stats"><span>⚔️ ${combo.atk}</span><span>❤️ ${combo.hp}</span></div>`;
     const skillsHtml = combo.skills?.length
@@ -783,8 +920,14 @@ window.UI = (() => {
         && selected.level === instance.level;
     }
 
+    // Points at BOTH the specific instances the tutorial's own reward
+    // set up (see startDeckMergeGuide) — before the player has even
+    // tapped one, unlike the selection-based glow above which only
+    // shows once something's already selected.
+    const isMergeGuideTarget = deckMergeGuideActive && instance.cardName === deckMergeGuideCharacterName;
+
     return `
-      <div class="db-tile db-tile-character ${isSelected ? "db-selected" : ""} ${isMergeCandidate ? "db-merge-candidate" : ""}"
+      <div class="db-tile db-tile-character ${isSelected ? "db-selected" : ""} ${isMergeCandidate ? "db-merge-candidate" : ""} ${isMergeGuideTarget ? "tutorial-highlight" : ""}"
         data-instance-id="${instance.instanceId}" data-card-name="${baseCard.name}" data-location="${location}">
         <img src="${baseCard.image}" class="db-tile-img" alt="${baseCard.name}">
         <div class="db-tile-rank">${window.buildRankIndicatorHtml(instance.level)}</div>
@@ -861,8 +1004,20 @@ window.UI = (() => {
         dbSelectedInstanceId = null;
 
         if (confirmed) {
+          await showOrbitMergeAnimation(baseCard, baseCard);
           const result = P.mergeUpgrade(first.instanceId, second.instanceId);
           if (result.success) updateCoinsDisplay();
+
+          // The merge guide (see startDeckMergeGuide) only cares about
+          // ONE real merge ever happening — once it does, the guide is
+          // done its job regardless of which characters were involved.
+          if (deckMergeGuideActive) {
+            deckMergeGuideActive = false;
+            await showSimpleTutorialModal(
+              "כל הכבוד! 🎉",
+              "בדיוק ככה ממזגים — מזהים 2 עותקים זהים באותה רמה ומשדרגים אותם לרמה אחת גבוהה יותר. ככל שהדמות מתקדמת ברמות, היא חזקה יותר בקרב."
+            );
+          }
         }
 
         dbRenderAll();
@@ -1388,17 +1543,29 @@ window.UI = (() => {
   }
 
   function init() {
-    document.getElementById("goPlayBtn").addEventListener("click", async () => {
+    document.getElementById("goPlayBtn").addEventListener("click", () => {
       // First-ever PLAY tap launches the guided tutorial battle instead
-      // of the normal difficulty picker — see tutorial.js. Every tap
-      // after that (once hasSeenTutorial is set, whether by finishing
-      // or explicitly skipping) goes straight to the normal flow.
+      // of the mode-selection screen — see tutorial.js. Every tap after
+      // that (once hasSeenTutorial is set, whether by finishing or
+      // explicitly skipping) goes to Game Modes normally. This is also
+      // the ONLY gate Campaign/Dungeon need now — both are reachable
+      // exclusively through here, so a player who reaches Game Modes at
+      // all has already cleared this same check; no separate per-mode
+      // tutorial check needed on top of it.
       if (window.Progression.shouldShowTutorial()) {
         showScreen("battleScreen");
         window.startBattle({ isTutorial: true, stageName: "מדריך" });
         return;
       }
 
+      showScreen("gameModesScreen");
+    });
+
+    document.getElementById("gameModesBackBtn").addEventListener("click", () => {
+      showScreen("homeScreen");
+    });
+
+    document.getElementById("modeQuickMatchBtn").addEventListener("click", async () => {
       const difficulty = await showDifficultyPicker();
       if (!difficulty) return;
 
@@ -1410,19 +1577,16 @@ window.UI = (() => {
       });
     });
 
-    document.getElementById("goCampaignBtn").addEventListener("click", () => {
-      // Locked until the tutorial is done — a brand new player jumping
-      // straight into a boss fight without ever having placed or fused
-      // a card would be lost. Same flag used everywhere else
-      // (shouldShowTutorial/markTutorialSeen) — nothing new to track.
-      if (window.Progression.shouldShowTutorial()) {
-        flashHomeMessage("קודם סיימו את המדריך (⚔️ PLAY) כדי לפתוח את הקמפיין.");
-        return;
-      }
+    document.getElementById("modeCampaignBtn").addEventListener("click", () => {
+      window.CampaignUI.renderWorldSelection();
+      showScreen("worldSelectScreen");
+      maybeShowScreenIntro("worldSelectScreen");
+    });
 
-      window.CampaignUI.renderWorldMap("neighborhood");
-      showScreen("campaignWorldScreen");
-      maybeShowScreenIntro("campaignWorldScreen");
+    document.getElementById("modeDungeonBtn").addEventListener("click", () => {
+      window.DungeonUI.renderDungeonList();
+      showScreen("dungeonScreen");
+      maybeShowScreenIntro("dungeonScreen");
     });
 
     document.getElementById("goCollectionBtn").addEventListener("click", () => {
@@ -1440,6 +1604,18 @@ window.UI = (() => {
       dbRenderAll();
       showScreen("deckScreen");
       maybeShowScreenIntro("deckScreen");
+
+      // The button itself stops glowing once they've actually arrived —
+      // deckMergeGuideActive stays true a bit longer though, so
+      // dbCharacterTileHtml keeps highlighting the two specific
+      // mergeable instances (see below) until a real merge happens.
+      if (deckMergeGuideActive) {
+        document.getElementById("goDeckBtn")?.classList.remove("tutorial-highlight");
+        showSimpleTutorialModal(
+          "מיזוג דמויות 🃏",
+          `שמתם לב? יש לכם עכשיו 2 עותקים של ${deckMergeGuideCharacterName} באותה רמה בדיוק (מסומנים בזוהר למטה) — תלחצו על שניהם, אחד אחרי השני, כדי למזג אותם לרמה גבוהה יותר.`
+        ).then(() => dbRenderAll());
+      }
     });
 
     document.getElementById("goHowToPlayBtn").addEventListener("click", () => {
@@ -1463,6 +1639,18 @@ window.UI = (() => {
       rlStartTimerLoop();
       showScreen("researchLabScreen");
       maybeShowScreenIntro("researchLabScreen");
+
+      // Follow-up guide overlay, only the one time right after the
+      // tutorial pointed here (see startLabGuide) — clears itself so it
+      // never shows again on later, ordinary visits to the Lab.
+      if (labGuideActive) {
+        labGuideActive = false;
+        document.getElementById("goResearchLabBtn")?.classList.remove("tutorial-highlight");
+        showSimpleTutorialModal(
+          "עכשיו התור שלכם 🔬",
+          "בחרו שילוב שמופיע ברשימה (יש לכם את הדמות ואת החפץ), ולחצו \"התחל מחקר\". שימו לב לטיימר — יקח זמן אמיתי עד שהמחקר יסתיים."
+        );
+      }
     });
 
     document.getElementById("collectionBackBtn").addEventListener("click", () => showScreen("homeScreen"));
@@ -1503,6 +1691,61 @@ window.UI = (() => {
       }
     });
 
+    // Same code-gated pattern as the reset button above, for quickly
+    // granting Research Points AND coins during testing without
+    // needing to actually play through Quick Battle/Campaign/the
+    // tutorial each time. Reusable for any amount, not one-time
+    // hardcoded values.
+    document.getElementById("grantResearchBtn").addEventListener("click", () => {
+      const code = prompt("קוד גישה:");
+      if (code === null) return;
+
+      if (code !== "2259") {
+        flashHomeMessage("קוד שגוי.");
+        return;
+      }
+
+      const rpStr = prompt("כמה נקודות מחקר להוסיף?", "400");
+      if (rpStr === null) return;
+
+      const rpAmount = parseInt(rpStr, 10);
+      if (!Number.isFinite(rpAmount) || rpAmount <= 0) {
+        flashHomeMessage("מספר לא תקין.");
+        return;
+      }
+
+      const coinsStr = prompt("כמה מטבעות להוסיף?", "400");
+      if (coinsStr === null) return;
+
+      const coinsAmount = parseInt(coinsStr, 10);
+      if (!Number.isFinite(coinsAmount) || coinsAmount <= 0) {
+        flashHomeMessage("מספר לא תקין.");
+        return;
+      }
+
+      window.Progression.addResearchPoints(rpAmount);
+      window.Progression.grantRewards([{ type: "coins", amount: coinsAmount }]);
+
+      // Also tops up EVERY item to at least 3 copies — testing a combo
+      // in the Lab needs the actual ITEM owned, not just coins/RP, and
+      // coins/RP alone previously left combos looking mysteriously
+      // "locked" with no research button whenever the specific item
+      // hadn't actually been unlocked yet through real gameplay.
+      // Pulled dynamically from cards (not a hardcoded list) so this
+      // stays correct as new items get added later.
+      const allItemNames = cards.filter(c => c.type === "item").map(c => c.name);
+      allItemNames.forEach(itemName => {
+        const owned = window.Progression.getOwnedItemCount(itemName);
+        if (owned < 3) {
+          window.Progression.grantRewards([{ type: "unlockItem", item: itemName, amount: 3 - owned }]);
+        }
+      });
+
+      flashHomeMessage(
+        `נוספו ${rpAmount} נקודות מחקר, ${coinsAmount} מטבעות, ו-3+ מכל חפץ. סה"כ: 🧬${window.Progression.getResearchPoints()} · 💰${window.Progression.getCoins()}`
+      );
+    });
+
     initTabs();
     initDbFilters();
     initHowToPlay();
@@ -1511,5 +1754,5 @@ window.UI = (() => {
 
   init();
 
-  return { showScreen, updateCoinsDisplay };
+  return { showScreen, updateCoinsDisplay, maybeShowScreenIntro, startLabGuide, startDeckMergeGuide };
 })();

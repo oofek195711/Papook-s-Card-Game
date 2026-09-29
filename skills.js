@@ -108,7 +108,22 @@ window.SkillEngine = (() => {
     effects.showSkillBadge(owner, slotIndex, skill.icon || "👊", "אגרוף");
     log(`${card.name} הפעיל אגרוף!`);
     await effects.wait(350);
-    await damageCard(enemyBoard, targetIndex, value, card.name, true);
+
+    // Thrown from the attacking card to the target — waits for the
+    // throw to actually LAND before the damage/number shows, instead of
+    // both happening at the same instant.
+    const enemyOwner = owner === "player" ? "ai" : "player";
+    const attackerElement = document.querySelector(
+      `.slot[data-owner="${owner}"][data-index="${slotIndex}"] .card`
+    );
+    const targetElement = document.querySelector(
+      `.slot[data-owner="${enemyOwner}"][data-index="${targetIndex}"] .card`
+    );
+    if (attackerElement && targetElement) {
+      await effects.showChipsThrow(attackerElement, targetElement);
+    }
+
+    await damageCard(enemyBoard, targetIndex, value, card.name, true, false, false, true);
     await effects.wait(200);
   });
 
@@ -350,6 +365,12 @@ window.SkillEngine = (() => {
 
     effects.showSkillBadge(owner, slotIndex, skill.icon || "😡", "זעם");
     render();
+
+    const cardElement = document.querySelector(
+      `.slot[data-owner="${owner}"][data-index="${slotIndex}"] .card`
+    );
+    if (cardElement) effects.showRageNumber(cardElement, value);
+
     log(`${card.name} נכנס לזעם — ההתקפה שלו עולה ב-${value} לצמיתות!`);
   });
 
@@ -370,6 +391,15 @@ window.SkillEngine = (() => {
 
     const value = getScaledSkillValue(skill, card);
     target.poison = (target.poison || 0) + value;
+
+    // Carried onto the TARGET (not just read off the skill at apply
+    // time) because the actual damage happens later, via ticks in
+    // script.js's processPoisonTicks — by then we're no longer in this
+    // skill-resolution context at all, so the flag has to travel with
+    // the status effect itself.
+    if (skill.ignoresShield) {
+      target.poisonIgnoresShield = true;
+    }
 
     effects.showSkillBadge(owner, slotIndex, skill.icon || "☠️", "הרעלה");
     render();

@@ -42,9 +42,11 @@ window.Progression = (() => {
       // the existing merge-upgrade system. Research Points exist purely
       // to unlock the ABILITY to perform a specific named Fusion combo
       // in battle at all (owning the character+item is no longer
-      // enough by itself). Starting amount is generous for testing —
-      // no real source grants these yet (see addResearchPoints).
-      researchPoints: 500,
+      // enough by itself). Starts at 0 now — the tutorial's own
+      // completion reward (500, see runTutorialCompletionFlow in
+      // script.js) is the real first grant, alongside Quick Battle and
+      // Campaign wins as ongoing sources.
+      researchPoints: 0,
       // Combo keys ("CharacterName|ItemName") the player has actually
       // claimed research for — see combos.js for where researchCost/
       // researchTime live on each combo definition (not duplicated
@@ -144,7 +146,7 @@ window.Progression = (() => {
           : seedStarterInstances(),
         deck: parsed.deck && Array.isArray(parsed.deck.instanceIds) ? parsed.deck : null,
         stageProgress: parsed.stageProgress || {},
-        researchPoints: typeof parsed.researchPoints === "number" ? parsed.researchPoints : 500,
+        researchPoints: typeof parsed.researchPoints === "number" ? parsed.researchPoints : 0,
         researchedFusions,
         researchSpeedupCharges: typeof parsed.researchSpeedupCharges === "number"
           ? parsed.researchSpeedupCharges
@@ -805,6 +807,7 @@ window.Progression = (() => {
     mergeUpgrade,
     grantCharacterCopy,
     rollQuickBattleReward,
+    grantRewards,
     getDeckSelection,
     isInstanceInDeck,
     toggleDeckInstance,

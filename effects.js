@@ -164,6 +164,151 @@ window.GameEffects = (() => {
     setTimeout(() => healDiv.remove(), 800 / speedMultiplier);
   }
 
+  // Types text into an element one character at a time instead of it
+  // appearing all at once — used for the tutorial's own overlay text
+  // (see script.js/ui.js). Uses textContent (not innerHTML) since every
+  // caller passes plain text, never markup — deliberately safe rather
+  // than trying to type out HTML tags character by character. Resolves
+  // once fully typed, OR immediately if the element gets removed from
+  // the page partway through (e.g. the player tapped past it) so the
+  // caller's own await chain never hangs on a dismissed modal.
+  function typewriterText(element, text, speedMs = 20) {
+    return new Promise(resolve => {
+      element.textContent = "";
+
+      // Array.from (not a plain char-by-char index loop) — a naive
+      // text[i] loop walks UTF-16 CODE UNITS, and every emoji used in
+      // these messages (🎉, 🔬, 🍔...) is a surrogate PAIR of two code
+      // units. Indexing through it directly would split the emoji in
+      // half for one frame, rendering as a broken replacement glyph
+      // before "catching up" one tick later. Array.from splits on real
+      // Unicode code points instead, so each emoji types in as one
+      // whole character like it should.
+      const chars = Array.from(text);
+      let i = 0;
+
+      const interval = setInterval(() => {
+        if (!element.isConnected) {
+          clearInterval(interval);
+          resolve();
+          return;
+        }
+
+        element.textContent += chars[i];
+        i++;
+
+        if (i >= chars.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, speedMs / speedMultiplier);
+    });
+  }
+
+  // Rage's own permanent ATK increase — same floating-number pattern as
+  // heal, but its own distinct look (orange, ⚔️-flavored) so it doesn't
+  // read as HP being restored.
+  function showRageNumber(element, amount) {
+    const rect = element.getBoundingClientRect();
+    const rageDiv = document.createElement("div");
+
+    rageDiv.className = "rage-number";
+    rageDiv.innerText = `+${amount} ⚔️`;
+    rageDiv.style.left = rect.left + rect.width / 2 + "px";
+    rageDiv.style.top = rect.top + rect.height / 2 + "px";
+
+    document.body.appendChild(rageDiv);
+    setTimeout(() => rageDiv.remove(), 800 / speedMultiplier);
+  }
+
+  // Poison's own recurring tick — same floating-number pattern as
+  // showDamageNumber, but visually distinct (sickly green, ☠️-flavored)
+  // so a poison tick reads differently from a normal attack/skill hit
+  // at a glance, even though the underlying HP loss works the same way.
+  function showPoisonNumber(element, amount) {
+    const rect = element.getBoundingClientRect();
+    const poisonDiv = document.createElement("div");
+
+    poisonDiv.className = "poison-number";
+    poisonDiv.innerText = `-${amount} ☠️`;
+    poisonDiv.style.left = rect.left + rect.width / 2 + "px";
+    poisonDiv.style.top = rect.top + rect.height / 2 + "px";
+
+    document.body.appendChild(poisonDiv);
+    setTimeout(() => poisonDiv.remove(), 800 / speedMultiplier);
+  }
+
+  // Punch's own themed HP-loss number (dark mustard yellow) — visually
+  // distinct from a normal attack, matching the "thrown chips" bit
+  // below rather than a generic hit.
+  function showPunchNumber(element, amount) {
+    const rect = element.getBoundingClientRect();
+    const div = document.createElement("div");
+
+    div.className = "punch-number";
+    div.innerText = `-${amount}`;
+    div.style.left = rect.left + rect.width / 2 + "px";
+    div.style.top = rect.top + rect.height / 2 + "px";
+
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 800 / speedMultiplier);
+  }
+
+  // Per-weakness-item themed "impact" mark — a colored splash/stain
+  // over the target card, brief and self-cleaning, so different
+  // weakness items read as visually distinct (קטשופ splatters red,
+  // for instance) rather than every Weakness looking identical. Falls
+  // back to a plain "⚠️" flash for any item not in the map, so a
+  // future weakness item still gets SOMETHING rather than nothing.
+  const WEAKNESS_VISUALS = {
+    "קטשופ": { color: "rgba(200, 30, 20, .85)", icon: "🍅" },
+    "חתול": { color: "rgba(255, 140, 20, .8)", icon: "🐾" },
+    "דגדוגים": { color: "rgba(255, 220, 60, .8)", icon: "😹" },
+    "שעון": { color: "rgba(120, 80, 220, .8)", icon: "😵‍💫" }
+  };
+
+  function showWeaknessEffect(element, itemName) {
+    const visual = WEAKNESS_VISUALS[itemName] || { color: "rgba(255,255,255,.6)", icon: "⚠️" };
+    const rect = element.getBoundingClientRect();
+
+    const splash = document.createElement("div");
+    splash.className = "weakness-splash";
+    splash.style.setProperty("--splash-color", visual.color);
+    splash.style.left = rect.left + "px";
+    splash.style.top = rect.top + "px";
+    splash.style.width = rect.width + "px";
+    splash.style.height = rect.height + "px";
+    splash.innerHTML = `<span class="weakness-splash-icon">${visual.icon}</span>`;
+
+    document.body.appendChild(splash);
+    setTimeout(() => splash.remove(), 900 / speedMultiplier);
+  }
+
+  // Punch's own "thrown chips" projectile — flies from the attacking
+  // card's screen position to the target's, then is gone. Returns a
+  // Promise so the caller can wait for the throw to actually LAND
+  // before showing the damage number, instead of both happening at once.
+  function showChipsThrow(fromElement, toElement) {
+    return new Promise(resolve => {
+      const fromRect = fromElement.getBoundingClientRect();
+      const toRect = toElement.getBoundingClientRect();
+
+      const chip = document.createElement("div");
+      chip.className = "punch-chips-projectile";
+      chip.innerText = "🍟";
+      chip.style.left = fromRect.left + fromRect.width / 2 + "px";
+      chip.style.top = fromRect.top + fromRect.height / 2 + "px";
+      chip.style.setProperty("--throw-dx", (toRect.left - fromRect.left) + "px");
+      chip.style.setProperty("--throw-dy", (toRect.top - fromRect.top) + "px");
+
+      document.body.appendChild(chip);
+      setTimeout(() => {
+        chip.remove();
+        resolve();
+      }, 450 / speedMultiplier);
+    });
+  }
+
   function showSkillBadge(owner, slotIndex, icon, label) {
     const card = document.querySelector(
       `.slot[data-owner="${owner}"][data-index="${slotIndex}"] .card`
@@ -282,6 +427,12 @@ window.GameEffects = (() => {
     animateAttack,
     showDamageNumber,
     showHealNumber,
+    typewriterText,
+    showRageNumber,
+    showPoisonNumber,
+    showPunchNumber,
+    showChipsThrow,
+    showWeaknessEffect,
     showSkillBadge,
     shakeCard,
     playDeath,

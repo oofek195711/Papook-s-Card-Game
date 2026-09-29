@@ -35,18 +35,55 @@
   <section id="homeScreen" class="home-screen">
     <h1 class="home-title"><img src="icon-192.png" class="home-title-icon" alt="Papook"> Papook</h1>
     <button type="button" id="goPlayBtn" class="home-btn">⚔️ PLAY</button>
-    <button type="button" id="goCampaignBtn" class="home-btn campaign">🗺️ CAMPAIGN</button>
     <button type="button" id="goCollectionBtn" class="home-btn secondary">🃏 COLLECTION</button>
     <button type="button" id="goDeckBtn" class="home-btn secondary">🎴 MY DECK</button>
     <button type="button" id="goResearchLabBtn" class="home-btn research">🔬 RESEARCH LAB</button>
     <button type="button" id="goHowToPlayBtn" class="home-btn howto">❓ HOW TO PLAY</button>
     <button type="button" id="resetProgressBtn" class="home-reset-link">🔄 איפוס התקדמות (Dev)</button>
-    <div class="home-version-tag">v77</div>
+    <button type="button" id="grantResearchBtn" class="home-reset-link">🧪 הוסף משאבים (Dev)</button>
+    <div class="home-version-tag">v100</div>
+  </section>
+
+  <section id="gameModesScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="gameModesBackBtn" class="back-btn">→ בית</button>
+      <h2>בחר אופן משחק</h2>
+    </header>
+
+    <div class="game-modes-list">
+      <button type="button" id="modeQuickMatchBtn" class="game-mode-tile game-mode-quickmatch">
+        <div class="game-mode-title">QUICK MATCH</div>
+      </button>
+      <button type="button" id="modeCampaignBtn" class="game-mode-tile game-mode-campaign">
+        <div class="game-mode-title">CAMPAIGN</div>
+      </button>
+      <button type="button" id="modeDungeonBtn" class="game-mode-tile game-mode-dungeon">
+        <div class="game-mode-title">DUNGEON</div>
+      </button>
+    </div>
+  </section>
+
+  <section id="worldSelectScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="worldSelectBackBtn" class="back-btn">→ בית</button>
+      <h2>בחר קמפיין</h2>
+    </header>
+
+    <div id="worldSelectList" class="world-select-list"></div>
+  </section>
+
+  <section id="dungeonScreen" class="sub-screen hidden">
+    <header class="sub-header">
+      <button type="button" id="dungeonBackBtn" class="back-btn">→ בית</button>
+      <h2>🛡️ מרתף (Dungeon)</h2>
+    </header>
+
+    <div id="dungeonList" class="world-select-list"></div>
   </section>
 
   <section id="campaignWorldScreen" class="sub-screen hidden">
     <header class="sub-header">
-      <button type="button" id="campaignWorldBackBtn" class="back-btn">→ בית</button>
+      <button type="button" id="campaignWorldBackBtn" class="back-btn">→ קמפיינים</button>
       <h2 id="campaignWorldTitle">השכונה</h2>
     </header>
 
@@ -59,6 +96,7 @@
       <h2 id="campaignLocationTitle">הבית של תמר</h2>
     </header>
 
+    <div id="campaignLocationHint"></div>
     <div id="campaignLocationMap" class="campaign-map"></div>
   </section>
 
@@ -160,6 +198,7 @@
     </header>
 
     <div id="tutorialInstructionBanner" class="tutorial-instruction-banner hidden">
+      <span class="tutorial-instruction-icon">👉</span>
       <span class="tutorial-instruction-text"></span>
       <button type="button" id="tutorialSkipLink" class="tutorial-skip-link">דלג על המדריך</button>
     </div>
@@ -217,6 +256,8 @@
        (was campaign/worlds/neighborhood.js and campaign/progression.js).
        progression.js is the only thing allowed to touch localStorage. -->
   <script src="campaign-neighborhood.js"></script>
+  <script src="campaign-telaviv.js"></script>
+  <script src="dungeon-bosses.js"></script>
   <script src="progression.js"></script>
 
   <script src="effects.js"></script>
@@ -226,6 +267,7 @@
   <script src="tutorial.js"></script>
   <script src="script.js"></script>
   <script src="campaign.js"></script>
+  <script src="dungeon.js"></script>
   <script src="ui.js"></script>
 </body>
 </html>
